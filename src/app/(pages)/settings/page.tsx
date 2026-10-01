@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
 import { authJsonFetch, logoutSession } from "@/src/lib/session";
@@ -22,25 +21,8 @@ interface APIKeyItem {
   createdAt: string;
 }
 
-interface WebhookItem {
-  id?: string;
-  _id?: string;
-  url: string;
-  events?: string[];
-  createdAt?: string;
-}
-
-interface AuditLogItem {
-  id?: string;
-  action: string;
-  resource: string;
-  resourceId?: string;
-  ipAddress?: string;
-  createdAt: string;
-}
-
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"profile" | "apikeys" | "webhooks" | "audit">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "apikeys">("profile");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [fullName, setFullName] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -56,23 +38,13 @@ export default function SettingsPage() {
   const [createdRawKey, setCreatedRawKey] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
 
-  // Webhooks state
-  const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
-  const [newWebhookUrl, setNewWebhookUrl] = useState("");
-  const [creatingWebhook, setCreatingWebhook] = useState(false);
-
-  // Audit Logs state
-  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
-
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   async function loadData() {
     try {
-      const [pResp, kResp, wResp, aResp] = await Promise.all([
+      const [pResp, kResp] = await Promise.all([
         authJsonFetch<{ data?: Profile }>(api.users.me()),
         authJsonFetch<{ data?: APIKeyItem[] }>(api.developer.apiKeys()).catch(() => ({ data: [] })),
-        authJsonFetch<{ data?: WebhookItem[] }>(api.developer.webhooks()).catch(() => ({ data: [] })),
-        authJsonFetch<{ data?: AuditLogItem[] }>(api.developer.auditLogs()).catch(() => ({ data: [] })),
       ]);
 
       const nextProfile = pResp?.data || null;
@@ -80,8 +52,6 @@ export default function SettingsPage() {
       setFullName(nextProfile?.fullName || "");
       setTimezone(nextProfile?.timezone || "UTC");
       setApiKeys(kResp?.data || []);
-      setWebhooks(wResp?.data || []);
-      setAuditLogs(aResp?.data || []);
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to load settings" });
     } finally {
@@ -159,43 +129,10 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleCreateWebhook(e: FormEvent) {
-    e.preventDefault();
-    if (!newWebhookUrl.trim()) return;
-    setCreatingWebhook(true);
-    try {
-      await authJsonFetch(api.developer.webhooks(), {
-        method: "POST",
-        body: JSON.stringify({
-          url: newWebhookUrl.trim(),
-          events: ["post.published", "inbox.message_received", "smartlink.clicked"],
-        }),
-      });
-      setNewWebhookUrl("");
-      setMessage({ type: "success", text: "Webhook registered!" });
-      await loadData();
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to add webhook" });
-    } finally {
-      setCreatingWebhook(false);
-    }
-  }
-
-  async function handleDeleteWebhook(id: string) {
-    if (!confirm("Delete this webhook endpoint?")) return;
-    try {
-      await authJsonFetch(api.developer.deleteWebhook(id), { method: "DELETE" });
-      setMessage({ type: "success", text: "Webhook removed." });
-      await loadData();
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to delete webhook" });
-    }
-  }
-
   return (
     <CrmShell
       pageTitle="Settings & Developer Controls"
-      pageSubtitle="Manage identity, passwords, API tokens, webhook subscriptions, and security audit logs."
+      pageSubtitle="Manage identity, passwords, and developer API tokens."
       breadcrumbs={["XSocial", "Settings"]}
       onSignOut={async () => {
         await logoutSession();
@@ -231,28 +168,6 @@ export default function SettingsPage() {
           }`}
         >
           Developer API Keys
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("webhooks")}
-          className={`pb-3 text-xs font-bold uppercase tracking-wider px-2 border-b-2 transition-colors ${
-            activeTab === "webhooks"
-              ? "border-teal-700 text-teal-800"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          Webhooks
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("audit")}
-          className={`pb-3 text-xs font-bold uppercase tracking-wider px-2 border-b-2 transition-colors ${
-            activeTab === "audit"
-              ? "border-teal-700 text-teal-800"
-              : "border-transparent text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          Audit Logs
         </button>
       </div>
 
@@ -409,96 +324,6 @@ export default function SettingsPage() {
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Tab 3: Webhooks */}
-      {activeTab === "webhooks" && (
-        <div className="glass-panel p-6 rounded-2xl">
-          <h3 className="font-bold text-base mb-4">Register Webhook Endpoint</h3>
-          <form onSubmit={handleCreateWebhook} className="flex gap-2 max-w-lg mb-6">
-            <input
-              type="url"
-              placeholder="https://yourserver.com/webhooks/xsocial"
-              value={newWebhookUrl}
-              onChange={(e) => setNewWebhookUrl(e.target.value)}
-              className="flex-1 text-xs px-3 py-2 border rounded-lg bg-white"
-              required
-            />
-            <button
-              type="submit"
-              disabled={creatingWebhook || !newWebhookUrl.trim()}
-              className="bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded-lg text-xs disabled:opacity-50"
-            >
-              {creatingWebhook ? "Registering..." : "+ Register"}
-            </button>
-          </form>
-
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Active Endpoints</h4>
-          {webhooks.length === 0 ? (
-            <p className="text-xs text-slate-400">No webhooks registered.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {webhooks.map((w) => {
-                const wId = w.id || w._id || "";
-                return (
-                  <div
-                    key={wId}
-                    className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-mono text-xs font-semibold text-slate-900">{w.url}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Events: {(w.events || ["all"]).join(", ")}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteWebhook(wId)}
-                      className="text-xs text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 4: Audit Logs */}
-      {activeTab === "audit" && (
-        <div className="glass-panel p-6 rounded-2xl">
-          <h3 className="font-bold text-base mb-4">Security & Action Audit Logs</h3>
-          {auditLogs.length === 0 ? (
-            <p className="text-xs text-slate-400">No audit log records available.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 uppercase text-[10px] tracking-wider">
-                    <th className="py-2.5 px-3">Action</th>
-                    <th className="py-2.5 px-3">Resource</th>
-                    <th className="py-2.5 px-3">IP Address</th>
-                    <th className="py-2.5 px-3">Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {auditLogs.map((log, idx) => (
-                    <tr key={log.id || idx} className="hover:bg-slate-50/50">
-                      <td className="py-2.5 px-3 font-semibold text-slate-800">{log.action}</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-600">{log.resource}</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{log.ipAddress || "127.0.0.1"}</td>
-                      <td className="py-2.5 px-3 text-slate-400">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
     </CrmShell>

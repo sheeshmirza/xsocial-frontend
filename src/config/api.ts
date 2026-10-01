@@ -29,31 +29,9 @@ export const API_CONFIG = {
     // Posts & Composer
     POSTS: "/v1/posts",
     UPLOAD_MEDIA: "/v1/uploads/media",
-    PLANNER_BEST_TIMES: "/v1/planner/best-times",
 
-    // Unified Community Inbox
-    INBOX: "/v1/inbox",
-
-    // SmartLinks (Link-in-Bio)
-    SMARTLINKS: "/v1/smartlinks",
-
-    // Autolists & RSS Queues
-    AUTOLISTS: "/v1/autolists",
-    RSS_FEEDS: "/v1/rss-feeds",
-
-    // Competitors
-    COMPETITORS: "/v1/competitors",
-
-    // Analytics & Reports
-    ANALYTICS_SOCIAL: "/v1/analytics/social",
-    ANALYTICS_WEB: "/v1/analytics/web",
-    REPORTS: "/v1/reports",
-    REPORTS_GENERATE: "/v1/reports/generate",
-
-    // Developer API Keys, Webhooks, Audit Logs
+    // Developer API Keys
     API_KEYS: "/v1/api-keys",
-    WEBHOOKS: "/v1/webhooks",
-    AUDIT_LOGS: "/v1/audit-logs",
   },
 } as const;
 
@@ -139,58 +117,12 @@ export const api = {
       getApiUrl(`${API_CONFIG.ENDPOINTS.POSTS}/bulk/pause-recurrence`),
     bulkResumeRecurrence: () =>
       getApiUrl(`${API_CONFIG.ENDPOINTS.POSTS}/bulk/resume-recurrence`),
-    bestTimes: (query = "") =>
-      getApiUrl(`${API_CONFIG.ENDPOINTS.PLANNER_BEST_TIMES}${query}`),
   },
   uploads: {
     media: () => getApiUrl(API_CONFIG.ENDPOINTS.UPLOAD_MEDIA),
   },
-  inbox: {
-    list: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.INBOX}${query}`),
-    get: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.INBOX}/${pathSegment(id)}`),
-    reply: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.INBOX}/${pathSegment(id)}/reply`),
-    updateStatus: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.INBOX}/${pathSegment(id)}/status`),
-    cannedReplies: () => getApiUrl(`${API_CONFIG.ENDPOINTS.INBOX}/canned-replies`),
-    deleteCannedReply: (id: string) =>
-      getApiUrl(`${API_CONFIG.ENDPOINTS.INBOX}/canned-replies/${pathSegment(id)}`),
-  },
-  smartlinks: {
-    list: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.SMARTLINKS}${query}`),
-    create: () => getApiUrl(API_CONFIG.ENDPOINTS.SMARTLINKS),
-    update: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.SMARTLINKS}/${pathSegment(id)}`),
-    delete: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.SMARTLINKS}/${pathSegment(id)}`),
-    analytics: (id: string) =>
-      getApiUrl(`${API_CONFIG.ENDPOINTS.SMARTLINKS}/${pathSegment(id)}/analytics`),
-  },
-  autolists: {
-    list: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.AUTOLISTS}${query}`),
-    create: () => getApiUrl(API_CONFIG.ENDPOINTS.AUTOLISTS),
-    delete: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.AUTOLISTS}/${pathSegment(id)}`),
-    addPost: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.AUTOLISTS}/${pathSegment(id)}/posts`),
-    rssList: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.RSS_FEEDS}${query}`),
-    rssCreate: () => getApiUrl(API_CONFIG.ENDPOINTS.RSS_FEEDS),
-    rssDelete: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.RSS_FEEDS}/${pathSegment(id)}`),
-  },
-  competitors: {
-    list: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.COMPETITORS}${query}`),
-    create: () => getApiUrl(API_CONFIG.ENDPOINTS.COMPETITORS),
-    delete: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.COMPETITORS}/${pathSegment(id)}`),
-    sync: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.COMPETITORS}/${pathSegment(id)}/sync`),
-  },
-  analytics: {
-    social: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.ANALYTICS_SOCIAL}${query}`),
-    web: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.ANALYTICS_WEB}${query}`),
-  },
-  reports: {
-    list: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.REPORTS}${query}`),
-    generate: () => getApiUrl(API_CONFIG.ENDPOINTS.REPORTS_GENERATE),
-    download: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.REPORTS}/${pathSegment(id)}/download`),
-  },
   developer: {
     apiKeys: () => getApiUrl(API_CONFIG.ENDPOINTS.API_KEYS),
     deleteApiKey: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.API_KEYS}/${pathSegment(id)}`),
-    webhooks: () => getApiUrl(API_CONFIG.ENDPOINTS.WEBHOOKS),
-    deleteWebhook: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.WEBHOOKS}/${pathSegment(id)}`),
-    auditLogs: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.AUDIT_LOGS}${query}`),
   },
 };

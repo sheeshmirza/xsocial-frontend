@@ -48,21 +48,6 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: "Engagement & Content",
-    items: [
-      { label: "Unified Inbox", href: "/inbox", icon: "send" },
-      { label: "SmartLinks (Bio)", href: "/smartlinks", icon: "link" },
-      { label: "Autolists & RSS", href: "/autolists", icon: "rocket" },
-    ],
-  },
-  {
-    title: "Growth & Analytics",
-    items: [
-      { label: "Competitors", href: "/competitors", icon: "target" },
-      { label: "Analytics & Reports", href: "/analytics", icon: "chart" },
-    ],
-  },
-  {
     title: "Configuration",
     items: [
       { label: "Settings & API Keys", href: "/settings", icon: "settings" },

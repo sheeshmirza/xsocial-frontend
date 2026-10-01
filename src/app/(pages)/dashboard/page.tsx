@@ -207,7 +207,6 @@ export default function DashboardPage() {
   const [pollDuration, setPollDuration] = useState<string>("THREE_DAYS");
   const [instagramTrialEnabled, setInstagramTrialEnabled] = useState(false);
   const [instagramGraduation, setInstagramGraduation] = useState<string>("MANUAL");
-  const [bestTimes, setBestTimes] = useState<any[]>([]);
   const [enableAiGeneration, setEnableAiGeneration] = useState(false);
   const [aiGenerationType, setAiGenerationType] = useState<AiGenerationType>("text");
   const [aiTextPrompt, setAiTextPrompt] = useState("");

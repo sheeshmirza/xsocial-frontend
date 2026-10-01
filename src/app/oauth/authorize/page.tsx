@@ -247,8 +247,7 @@ export default function MCPAuthorizePage() {
         <div className="message" style={{ marginBottom: 16 }}>
           <strong>Requested access</strong>
           <br />
-          Manage brands, analytics, scheduled posts, publishing, inbox
-          conversations, SmartLinks, and reports.
+          Manage brands, scheduled posts, social accounts, and publishing.
         </div>
 
         <button
