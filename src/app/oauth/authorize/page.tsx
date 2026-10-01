@@ -11,6 +11,7 @@ type Profile = {
 
 export default function MCPAuthorizePage() {
   const [transaction, setTransaction] = useState("");
+  const [oauthAccessToken, setOAuthAccessToken] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,7 +72,7 @@ export default function MCPAuthorizePage() {
         throw new Error("xSocial did not return a valid access token.");
       }
 
-      sessionStorage.setItem("mcp.oauth.accessToken", accessToken);
+      setOAuthAccessToken(accessToken);
       const user = payload?.data?.user || payload?.user;
       setProfile({
         id: user?.id,
@@ -101,11 +102,10 @@ export default function MCPAuthorizePage() {
       };
 
       if (action === "allow") {
-        const accessToken = sessionStorage.getItem("mcp.oauth.accessToken");
-        if (!accessToken) {
+        if (!oauthAccessToken) {
           throw new Error("Please sign in before allowing access.");
         }
-        headers.Authorization = `Bearer ${accessToken}`;
+        headers.Authorization = `Bearer ${oauthAccessToken}`;
       }
 
       const body = new URLSearchParams({
@@ -121,7 +121,7 @@ export default function MCPAuthorizePage() {
         }),
       );
 
-      sessionStorage.removeItem("mcp.oauth.accessToken");
+      setOAuthAccessToken("");
 
       if (!payload?.redirect_uri) {
         throw new Error("xSocial did not return the OAuth redirect.");
