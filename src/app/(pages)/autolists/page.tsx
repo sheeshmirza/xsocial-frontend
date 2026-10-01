@@ -6,17 +6,12 @@ import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
 import { authJsonFetch, clearSession } from "@/src/lib/session";
 
-interface AutolistScheduleSlot {
-  day: string;
-  time: string;
-}
-
 interface Autolist {
   id?: string;
   _id?: string;
   name: string;
-  active: boolean;
-  schedule?: AutolistScheduleSlot[];
+  isActive: boolean;
+  timeSlots?: { dayOfWeek: number; hour: number; minute: number }[];
   postCount?: number;
   createdAt?: string;
 }
@@ -24,9 +19,8 @@ interface Autolist {
 interface RSSFeed {
   id?: string;
   _id?: string;
-  url: string;
-  name?: string;
-  autolistId?: string;
+  feedUrl: string;
+  targetPlatforms?: string[];
 }
 
 export default function AutolistsPage() {
@@ -72,11 +66,11 @@ export default function AutolistsPage() {
         method: "POST",
         body: JSON.stringify({
           name: name.trim(),
-          active: true,
-          schedule: [
-            { day: "monday", time: "09:00" },
-            { day: "wednesday", time: "14:00" },
-            { day: "friday", time: "17:00" },
+          targetPlatforms: ["linkedin", "instagram"],
+          timeSlots: [
+            { dayOfWeek: 1, hour: 9, minute: 0 },
+            { dayOfWeek: 3, hour: 14, minute: 0 },
+            { dayOfWeek: 5, hour: 17, minute: 0 },
           ],
         }),
       });
@@ -98,8 +92,9 @@ export default function AutolistsPage() {
       await authJsonFetch(api.autolists.rssCreate(), {
         method: "POST",
         body: JSON.stringify({
-          url: rssUrl.trim(),
-          name: rssName.trim() || "Automated Blog Feed",
+          feedUrl: rssUrl.trim(),
+          targetPlatforms: ["linkedin", "instagram"],
+          template: rssName.trim() || "{title} - {link}",
         }),
       });
       setRssUrl("");
@@ -203,10 +198,10 @@ export default function AutolistsPage() {
                           <h4 className="font-semibold text-xs text-slate-900">{list.name}</h4>
                           <span
                             className={`text-[9px] uppercase px-1.5 py-0.5 rounded-full font-bold ${
-                              list.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                              list.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                             }`}
                           >
-                            {list.active ? "Active" : "Paused"}
+                            {list.isActive ? "Active" : "Paused"}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
@@ -284,8 +279,8 @@ export default function AutolistsPage() {
                       className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between"
                     >
                       <div>
-                        <h4 className="font-semibold text-xs text-slate-900">{feed.name || "RSS Feed"}</h4>
-                        <p className="text-[11px] text-slate-500 truncate max-w-xs">{feed.url}</p>
+                        <h4 className="font-semibold text-xs text-slate-900">RSS Feed</h4>
+                        <p className="text-[11px] text-slate-500 truncate max-w-xs">{feed.feedUrl}</p>
                       </div>
                       <button
                         type="button"

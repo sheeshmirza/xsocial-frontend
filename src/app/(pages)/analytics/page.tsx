@@ -26,9 +26,9 @@ interface WebMetrics {
 interface ReportItem {
   id?: string;
   _id?: string;
-  name: string;
-  type: "pdf" | "csv";
-  status: "ready" | "processing";
+  title: string;
+  format: "pdf" | "csv" | "json";
+  status: "pending" | "completed" | "failed";
   createdAt: string;
 }
 
@@ -80,9 +80,17 @@ export default function AnalyticsPage() {
   async function handleGenerateReport(type: "pdf" | "csv") {
     setGenerating(true);
     try {
+      const periodEnd = new Date();
+      const periodStart = new Date(periodEnd);
+      periodStart.setDate(periodStart.getDate() - 30);
       await authJsonFetch(api.reports.generate(), {
         method: "POST",
-        body: JSON.stringify({ type, period: "last_30_days" }),
+        body: JSON.stringify({
+          title: `Performance Report (${type.toUpperCase()})`,
+          periodStart: periodStart.toISOString(),
+          periodEnd: periodEnd.toISOString(),
+          format: type,
+        }),
       });
       setMessage({ type: "success", text: `${type.toUpperCase()} report generation requested!` });
       await loadData();
@@ -243,9 +251,9 @@ export default function AnalyticsPage() {
                     className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between"
                   >
                     <div>
-                      <h4 className="font-semibold text-xs text-slate-900">{r.name}</h4>
+                      <h4 className="font-semibold text-xs text-slate-900">{r.title}</h4>
                       <span className="text-[10px] text-slate-400 font-mono">
-                        {r.type.toUpperCase()} • {new Date(r.createdAt).toLocaleDateString()}
+                        {r.format.toUpperCase()} • {new Date(r.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                     <a
