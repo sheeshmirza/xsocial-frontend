@@ -13,7 +13,7 @@
     // Ensures each file is treated as a separate module for isolated transpilation
     "isolatedModules": true,
     // Keeps JSX syntax intact for Next.js to process later
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     // Defines libraries available during compilation
     "lib": [
       "DOM",
@@ -54,6 +54,7 @@
   // Files and directories to include in type checking
   "include": [
     "**/*",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ]
 }
