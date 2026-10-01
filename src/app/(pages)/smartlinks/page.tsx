@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
-import { authJsonFetch, clearSession } from "@/src/lib/session";
+import { authJsonFetch, logoutSession } from "@/src/lib/session";
 
 interface LinkButton {
   title: string;
@@ -100,8 +100,8 @@ export default function SmartLinksPage() {
       pageTitle="SmartLinks (Link-in-Bio)"
       pageSubtitle="Drive traffic from Instagram & LinkedIn profiles to high-converting branded landing pages."
       breadcrumbs={["XSocial", "SmartLinks"]}
-      onSignOut={() => {
-        clearSession();
+      onSignOut={async () => {
+        await logoutSession();
         window.location.href = "/signin";
       }}
     >

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
-import { authJsonFetch, clearSession } from "@/src/lib/session";
+import { authJsonFetch, logoutSession } from "@/src/lib/session";
 
 interface Autolist {
   id?: string;
@@ -135,8 +135,8 @@ export default function AutolistsPage() {
       pageTitle="Autolists & RSS Queues"
       pageSubtitle="Automate evergreen content rotation and continuous RSS feed publishing across your channels."
       breadcrumbs={["XSocial", "Autolists"]}
-      onSignOut={() => {
-        clearSession();
+      onSignOut={async () => {
+        await logoutSession();
         window.location.href = "/signin";
       }}
     >

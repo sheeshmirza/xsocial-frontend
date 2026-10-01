@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
-import { authJsonFetch, clearSession } from "@/src/lib/session";
+import { authJsonFetch, logoutSession } from "@/src/lib/session";
 
 interface Competitor {
   id?: string;
@@ -99,8 +99,8 @@ export default function CompetitorsPage() {
       pageTitle="Competitor Benchmarking"
       pageSubtitle="Track audience growth, engagement rates, and content frequency against rival industry accounts."
       breadcrumbs={["XSocial", "Competitors"]}
-      onSignOut={() => {
-        clearSession();
+      onSignOut={async () => {
+        await logoutSession();
         window.location.href = "/signin";
       }}
     >

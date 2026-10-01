@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
-import { authJsonFetch, clearSession } from "@/src/lib/session";
+import { authJsonFetch, logoutSession } from "@/src/lib/session";
 
 interface SocialMetrics {
   impressions: number;
@@ -106,8 +106,8 @@ export default function AnalyticsPage() {
       pageTitle="Analytics & Multi-Channel Reports"
       pageSubtitle="Track social engagement, audience growth, website click-throughs, and export branded client reports."
       breadcrumbs={["XSocial", "Analytics"]}
-      onSignOut={() => {
-        clearSession();
+      onSignOut={async () => {
+        await logoutSession();
         window.location.href = "/signin";
       }}
     >
