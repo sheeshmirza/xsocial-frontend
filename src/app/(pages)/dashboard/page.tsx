@@ -26,6 +26,7 @@ type PostMediaItem = {
 
 type SocialAccount = {
   _id: string;
+  id?: string;
   platform: Platform;
   platformId?: string;
   platformUsername?: string;
@@ -150,10 +151,15 @@ const AI_IMAGE_PROVIDER = "google";
 const AI_IMAGE_MODEL = "gemini-3.1-flash-lite";
 const supportedPlatformSet = new Set<string>(SUPPORTED_SOCIAL_PLATFORMS);
 
-const normalizeSocialAccount = (account: SocialAccount): SocialAccount => ({
-  ...account,
-  platform: String(account.platform || "").toLowerCase() as Platform,
-});
+const normalizeSocialAccount = (account: SocialAccount): SocialAccount => {
+  const resolvedId = account._id || account.id || "";
+  return {
+    ...account,
+    _id: resolvedId,
+    id: resolvedId,
+    platform: String(account.platform || "").toLowerCase() as Platform,
+  };
+};
 
 const normalizeSupportedPlatforms = (
   value: string[] | undefined,
