@@ -1,0 +1,59 @@
+{
+  "compilerOptions": {
+    // Disallow JavaScript files; only TypeScript is permitted
+    "allowJs": false,
+    //
+    "allowSyntheticDefaultImports": true,
+    // Enables interoperability between CommonJS and ES modules
+    "esModuleInterop": true,
+    //
+    "forceConsistentCasingInFileNames": true,
+    // Speeds up compilation by reusing information from previous builds
+    "incremental": true,
+    // Ensures each file is treated as a separate module for isolated transpilation
+    "isolatedModules": true,
+    // Keeps JSX syntax intact for Next.js to process later
+    "jsx": "preserve",
+    // Defines libraries available during compilation
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
+    // Uses ESNext module syntax for modern JavaScript compatibility
+    "module": "ESNext",
+    // Determines how modules are resolved — Bundler mode is ideal for Next.js
+    "moduleResolution": "Bundler",
+    // Prevents emitting compiled JavaScript; TypeScript acts only as a type checker
+    "noEmit": true,
+    // Simplifies import paths using aliases
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    // Enables Next.js TypeScript plugin for better DX (developer experience)
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    // Allows importing `.json` files as modules
+    "resolveJsonModule": true,
+    // Skips type checking of declaration files for faster builds
+    "skipLibCheck": true,
+    // Enforces strict type checking across all code
+    "strict": true,
+    // Compiles to the latest ECMAScript version
+    "target": "ESNext"
+  },
+  // Exclude large or unnecessary directories from compilation
+  "exclude": [
+    "node_modules"
+  ],
+  // Files and directories to include in type checking
+  "include": [
+    "**/*",
+    ".next/types/**/*.ts"
+  ]
+}

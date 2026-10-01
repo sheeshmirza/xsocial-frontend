@@ -1,0 +1,196 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import AppIcon from "@/src/components/ui/AppIcon";
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon:
+    | "home"
+    | "publish"
+    | "users"
+    | "settings"
+    | "folder"
+    | "send"
+    | "link"
+    | "rocket"
+    | "target"
+    | "trend"
+    | "chart";
+};
+
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
+
+type CrmShellProps = {
+  pageTitle: string;
+  pageSubtitle?: string;
+  breadcrumbs?: string[];
+  actions?: ReactNode;
+  filters?: ReactNode;
+  onSignOut: () => Promise<void> | void;
+  children: ReactNode;
+};
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Core Workspace",
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: "home" },
+      { label: "Social Accounts", href: "/accounts", icon: "users" },
+      { label: "Brands & Workspaces", href: "/brands", icon: "folder" },
+    ],
+  },
+  {
+    title: "Engagement & Content",
+    items: [
+      { label: "Unified Inbox", href: "/inbox", icon: "send" },
+      { label: "SmartLinks (Bio)", href: "/smartlinks", icon: "link" },
+      { label: "Autolists & RSS", href: "/autolists", icon: "rocket" },
+    ],
+  },
+  {
+    title: "Growth & Analytics",
+    items: [
+      { label: "Competitors", href: "/competitors", icon: "target" },
+      { label: "Ad Campaigns", href: "/ads", icon: "trend" },
+      { label: "Analytics & Reports", href: "/analytics", icon: "chart" },
+    ],
+  },
+  {
+    title: "Configuration",
+    items: [
+      { label: "Settings & API Keys", href: "/settings", icon: "settings" },
+    ],
+  },
+];
+
+export default function CrmShell({
+  pageTitle,
+  pageSubtitle,
+  breadcrumbs = ["XSocial", pageTitle],
+  actions,
+  filters,
+  onSignOut,
+  children,
+}: CrmShellProps) {
+  const pathname = usePathname();
+  const safePathname = pathname || "";
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileOpen]);
+
+  const allItems = useMemo(() => navGroups.flatMap((g) => g.items), []);
+
+  const activeLabel = useMemo(() => {
+    return allItems.find((item) => safePathname.startsWith(item.href))?.label || "Workspace";
+  }, [allItems, safePathname]);
+
+  return (
+    <div className="crm-app-shell">
+      <header className="crm-topnav glass-panel">
+        <div className="crm-topnav-left">
+          <button
+            type="button"
+            className="icon-btn mobile-only"
+            aria-label="Open navigation"
+            onClick={() => setMobileOpen(true)}
+          >
+            <AppIcon name="menu" className="app-icon" />
+          </button>
+          <div className="crm-brand-mark">
+            <span className="brand-icon" aria-hidden="true">
+              <AppIcon name="spark" className="app-icon" />
+            </span>
+            <div>
+              <p className="crm-brand-title">XSocial</p>
+              <p className="crm-brand-subtitle">{activeLabel}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="crm-topnav-right">
+          <button type="button" className="ghost-btn" onClick={onSignOut}>
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      <div className="crm-body">
+        <aside className={`crm-sidebar glass-panel ${mobileOpen ? "open" : ""}`}>
+          <div className="crm-sidebar-head mobile-only">
+            <p>Navigation</p>
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="Close navigation"
+              onClick={() => setMobileOpen(false)}
+            >
+              <AppIcon name="close" className="app-icon" />
+            </button>
+          </div>
+
+          {navGroups.map((group) => (
+            <div key={group.title} className="crm-nav-group">
+              <p className="crm-nav-title">{group.title}</p>
+              {group.items.map((item) => {
+                const active = safePathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href + item.label}
+                    href={item.href}
+                    className={`crm-nav-link ${active ? "active" : ""}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <AppIcon name={item.icon} className="app-icon" />
+                    <span>
+                      <strong>{item.label}</strong>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </aside>
+
+        {mobileOpen ? (
+          <button
+            type="button"
+            className="crm-overlay"
+            aria-label="Close navigation"
+            onClick={() => setMobileOpen(false)}
+          />
+        ) : null}
+
+        <section className="crm-main" id="main-content">
+          <div className="crm-page-header">
+            <div>
+              <p className="crm-breadcrumbs">{breadcrumbs.join(" / ")}</p>
+              <h1>{pageTitle}</h1>
+              {pageSubtitle ? <p className="subtitle">{pageSubtitle}</p> : null}
+            </div>
+            <div className="crm-page-actions">{actions}</div>
+          </div>
+          {filters ? <div className="crm-page-filters">{filters}</div> : null}
+          {children}
+        </section>
+      </div>
+    </div>
+  );
+}
