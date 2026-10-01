@@ -93,7 +93,7 @@ export default function InboxPage() {
     try {
       await authJsonFetch(api.inbox.reply(convId), {
         method: "POST",
-        body: JSON.stringify({ message: replyText.trim() }),
+        body: JSON.stringify({ text: replyText.trim() }),
       });
       const newMsg: InboxMessage = {
         sender: "me",
