@@ -9,6 +9,9 @@ type Profile = {
   email?: string;
 };
 
+const CHATGPT_XSOCIAL_URL =
+  "https://chatgpt.com/plugins/plugins_6abe9a135fb08191b06ab57d40f44e2e";
+
 export default function MCPAuthorizePage() {
   const [transaction, setTransaction] = useState("");
   const [oauthAccessToken, setOAuthAccessToken] = useState("");
@@ -43,7 +46,7 @@ export default function MCPAuthorizePage() {
     setError("");
 
     if (!transaction) {
-      setError("This OAuth session is missing or expired.");
+      setError("Start the connection from ChatGPT so a valid OAuth session can be created.");
       return;
     }
 
@@ -91,7 +94,7 @@ export default function MCPAuthorizePage() {
     setError("");
 
     if (!transaction) {
-      setError("This OAuth session is missing or expired.");
+      setError("Start the connection from ChatGPT so a valid OAuth session can be created.");
       return;
     }
 
@@ -143,10 +146,26 @@ export default function MCPAuthorizePage() {
       <main className="auth-shell" id="main-content">
         <section className="auth-card">
           <p className="eyebrow">XSocial</p>
-          <h1>OAuth session expired</h1>
+          <h1>Start from ChatGPT</h1>
           <p className="subtitle">
-            Please close this window and reconnect xSocial from ChatGPT.
+            This page is the xSocial authorization screen used after ChatGPT
+            starts an OAuth connection. Opening this URL directly does not
+            create an OAuth session.
           </p>
+          <a
+            href={CHATGPT_XSOCIAL_URL}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              minHeight: 44,
+              marginTop: 16,
+              textDecoration: "none",
+            }}
+          >
+            Return to xSocial in ChatGPT
+          </a>
         </section>
       </main>
     );
