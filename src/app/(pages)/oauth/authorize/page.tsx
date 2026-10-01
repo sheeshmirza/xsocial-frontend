@@ -9,10 +9,6 @@ type Profile = {
   email?: string;
 };
 
-type OAuthPayload = {
-  transaction: string;
-};
-
 export default function MCPAuthorizePage() {
   const [transaction, setTransaction] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -76,6 +72,7 @@ export default function MCPAuthorizePage() {
       }
 
       const user = payload?.data?.user || payload?.user;
+      sessionStorage.setItem("mcp.oauth.accessToken", accessToken);
       setProfile({
         id: user?.id,
         name: user?.fullName || user?.name || "",
@@ -99,15 +96,12 @@ export default function MCPAuthorizePage() {
 
     setDecisionLoading(true);
     try {
-      const accessToken = await getBearerFromLoginSession();
       const headers: HeadersInit = {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
       };
 
       if (action === "allow") {
-        if (!accessToken) {
-          throw new Error("Please sign in before allowing access.");
-        }
+        const accessToken = await getBearerFromLoginSession();
         headers.Authorization = `Bearer ${accessToken}`;
       }
 
