@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   api,
@@ -40,8 +40,12 @@ export default function OAuthCallbackHandler({
   const [message, setMessage] = useState(
     `Finalizing your ${label} connection...`,
   );
+  const executedRef = useRef(false);
 
   useEffect(() => {
+    if (executedRef.current) return;
+    executedRef.current = true;
+
     let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const redirect = (nextStatus: Status, nextMessage: string) => {
