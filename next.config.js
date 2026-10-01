@@ -10,6 +10,8 @@ const nextConfig = {
   output: "export",
   // Enable React strict mode for improved debugging and performance checks
   reactStrictMode: true,
+  // Use the Rust-based SWC compiler for faster builds
+  swcMinify: true,
   // Ensure all URLs end with a trailing slash (useful for static hosts)
   trailingSlash: true,
   // Custom Webpack alias for simpler imports using "@"
