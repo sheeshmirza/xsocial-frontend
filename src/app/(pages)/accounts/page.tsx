@@ -15,6 +15,7 @@ type Platform = SupportedSocialPlatform;
 
 type SocialAccount = {
   _id: string;
+  id?: string;
   platform: Platform;
   platformId?: string;
   platformDisplayName?: string;
@@ -29,8 +30,13 @@ type SocialAccountsResponse = {
 };
 
 type ConnectResponse = {
+  authUrl?: string;
+  url?: string;
+  platform?: string;
   data?: {
     authUrl?: string;
+    url?: string;
+    platform?: string;
   };
 };
 
@@ -41,10 +47,15 @@ const platformCards = [
 
 const supportedPlatformSet = new Set<string>(SUPPORTED_SOCIAL_PLATFORMS);
 
-const normalizeSocialAccount = (account: SocialAccount): SocialAccount => ({
-  ...account,
-  platform: String(account.platform || "").toLowerCase() as Platform,
-});
+const normalizeSocialAccount = (account: SocialAccount): SocialAccount => {
+  const resolvedId = account._id || account.id || "";
+  return {
+    ...account,
+    _id: resolvedId,
+    id: resolvedId,
+    platform: String(account.platform || "").toLowerCase() as Platform,
+  };
+};
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
@@ -141,7 +152,11 @@ export default function AccountsPage() {
         },
       );
 
-      const authUrl = payload?.data?.authUrl;
+      const authUrl =
+        payload?.data?.authUrl ||
+        payload?.authUrl ||
+        payload?.data?.url ||
+        payload?.url;
       if (!authUrl) {
         throw new Error("OAuth URL unavailable");
       }
@@ -198,6 +213,34 @@ export default function AccountsPage() {
   }
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const connected = params.get("connected");
+      const status = params.get("status");
+      const paramMsg = params.get("message");
+      if (connected) {
+        const platformName = connected.charAt(0).toUpperCase() + connected.slice(1);
+        if (status === "error") {
+          setMessage({
+            type: "error",
+            text: paramMsg || `Failed to connect ${platformName} account.`,
+          });
+        } else {
+          setMessage({
+            type: "success",
+            text: paramMsg || `Successfully connected ${platformName} account!`,
+          });
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (paramMsg) {
+        setMessage({
+          type: status === "error" ? "error" : "success",
+          text: paramMsg,
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
     const controller = new AbortController();
     loadAccounts(controller.signal);
 

@@ -50,7 +50,7 @@ export default function OAuthCallbackHandler({
       redirectTimer = setTimeout(() => {
         const socialTag = dashboardSocial || provider;
         router.replace(
-          `/dashboard?social=${socialTag}&status=${nextStatus}&message=${encodeURIComponent(nextMessage)}`,
+          `/accounts?connected=${socialTag}&status=${nextStatus}&message=${encodeURIComponent(nextMessage)}`,
         );
       }, 1000);
     };
@@ -96,11 +96,16 @@ export default function OAuthCallbackHandler({
           : new URL(callbackEndpoint, window.location.origin);
 
         callbackUrl.searchParams.set("code", code);
+        callbackUrl.searchParams.set("format", "json");
         if (state) {
           callbackUrl.searchParams.set("state", state);
         }
 
-        const response = await fetch(callbackUrl.toString());
+        const response = await fetch(callbackUrl.toString(), {
+          headers: {
+            Accept: "application/json",
+          },
+        });
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
