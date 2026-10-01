@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
-import { authJsonFetch, clearSession } from "@/src/lib/session";
+import { authJsonFetch, logoutSession } from "@/src/lib/session";
 
 interface Profile {
   email: string;
@@ -197,8 +197,8 @@ export default function SettingsPage() {
       pageTitle="Settings & Developer Controls"
       pageSubtitle="Manage identity, passwords, API tokens, webhook subscriptions, and security audit logs."
       breadcrumbs={["XSocial", "Settings"]}
-      onSignOut={() => {
-        clearSession();
+      onSignOut={async () => {
+        await logoutSession();
         window.location.href = "/signin";
       }}
     >

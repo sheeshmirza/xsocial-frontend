@@ -58,7 +58,11 @@ export default function AuthLifecycleForm({ mode }: Props) {
         body: JSON.stringify(request.body),
       });
       setMessage({ type: "success", text: payload?.message || "Request completed successfully." });
-      if (mode !== "forgot") setTimeout(() => router.replace("/signin"), 900);
+      if (mode === "forgot" && payload?.resetToken) {
+        setTimeout(() => router.replace(`/reset-password?token=${encodeURIComponent(payload.resetToken)}`), 1200);
+      } else if (mode !== "forgot") {
+        setTimeout(() => router.replace("/signin"), 900);
+      }
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Request failed" });
     } finally {

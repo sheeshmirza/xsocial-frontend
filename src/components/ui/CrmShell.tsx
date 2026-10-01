@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
+import { logoutSession } from "@/src/lib/session";
 
 type NavItem = {
   label: string;
@@ -33,7 +34,7 @@ type CrmShellProps = {
   breadcrumbs?: string[];
   actions?: ReactNode;
   filters?: ReactNode;
-  onSignOut: () => Promise<void> | void;
+  onSignOut?: () => Promise<void> | void;
   children: ReactNode;
 };
 
@@ -82,6 +83,15 @@ export default function CrmShell({
   const safePathname = pathname || "";
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const handleSignOut = async () => {
+    if (onSignOut) {
+      await onSignOut();
+    } else {
+      await logoutSession();
+      window.location.href = "/signin";
+    }
+  };
+
   useEffect(() => {
     if (!mobileOpen) {
       return;
@@ -125,7 +135,7 @@ export default function CrmShell({
         </div>
 
         <div className="crm-topnav-right">
-          <button type="button" className="ghost-btn" onClick={onSignOut}>
+          <button type="button" className="ghost-btn" onClick={handleSignOut}>
             Sign Out
           </button>
         </div>

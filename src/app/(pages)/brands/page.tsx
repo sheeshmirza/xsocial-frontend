@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import { api } from "@/src/config/api";
-import { authJsonFetch, clearSession } from "@/src/lib/session";
+import { authJsonFetch, logoutSession } from "@/src/lib/session";
 
 interface BrandMember {
   userId: string;
@@ -130,8 +130,8 @@ export default function BrandsPage() {
       pageTitle="Brands & Workspaces"
       pageSubtitle="Organize multiple clients, handles, team roles, and approval policies in isolated RBAC workspaces."
       breadcrumbs={["XSocial", "Brands"]}
-      onSignOut={() => {
-        clearSession();
+      onSignOut={async () => {
+        await logoutSession();
         window.location.href = "/signin";
       }}
     >

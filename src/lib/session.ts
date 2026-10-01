@@ -198,9 +198,36 @@ export const refreshSession = async (): Promise<string> => {
   return refreshInFlight;
 };
 
+export const isJwtExpired = (token: string, bufferSeconds = 15): boolean => {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return true;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    const parsed = JSON.parse(jsonPayload);
+    if (!parsed.exp) return false;
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    return parsed.exp <= nowInSeconds + bufferSeconds;
+  } catch {
+    return true;
+  }
+};
+
+export const isAuthenticated = (): boolean => {
+  if (!isBrowser) return false;
+  return Boolean(getAccessToken() || getRefreshToken());
+};
+
 export const ensureAccessToken = async (): Promise<string> => {
   const existing = getAccessToken();
-  if (existing) {
+  if (existing && !isJwtExpired(existing)) {
     return existing;
   }
   return refreshSession();
@@ -213,6 +240,7 @@ export const authFetch = async (
 ): Promise<Response> => {
   const token = await ensureAccessToken();
   if (!token) {
+    clearSession();
     throw new Error("Session expired. Please sign in again.");
   }
 
@@ -231,6 +259,7 @@ export const authFetch = async (
   if (response.status === 401 && allowRetry) {
     const refreshed = await refreshSession();
     if (!refreshed) {
+      clearSession();
       throw new Error("Session expired. Please sign in again.");
     }
 
@@ -243,10 +272,19 @@ export const authFetch = async (
       retryHeaders.set("Content-Type", "application/json");
     }
 
-    return fetchWithTimeout(input, {
+    const retryResponse = await fetchWithTimeout(input, {
       ...init,
       headers: retryHeaders,
     });
+
+    if (retryResponse.status === 401) {
+      clearSession();
+    }
+    return retryResponse;
+  }
+
+  if (response.status === 401) {
+    clearSession();
   }
 
   return response;
@@ -260,11 +298,24 @@ export const authJsonFetch = async <T = any>(
   const payload = await parseJsonSafely(response);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearSession();
+      if (
+        isBrowser &&
+        !window.location.pathname.startsWith("/signin") &&
+        !window.location.pathname.startsWith("/signup") &&
+        !window.location.pathname.startsWith("/verify-email") &&
+        !window.location.pathname.startsWith("/forgot-password") &&
+        !window.location.pathname.startsWith("/reset-password")
+      ) {
+        window.location.href = "/signin";
+      }
+      throw new Error("Session expired. Please sign in again.");
+    }
     const message =
       payload?.message ||
-      (response.status === 401
-        ? "Session expired. Please sign in again."
-        : "Request failed");
+      payload?.error ||
+      "Request failed";
     throw new Error(message);
   }
 

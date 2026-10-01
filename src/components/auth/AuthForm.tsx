@@ -107,6 +107,15 @@ export default function AuthForm({ mode }: Props) {
         router.replace("/dashboard");
         return;
       }
+      if (data?.verificationToken) {
+        setSuccess(
+          "Account created successfully. Redirecting to verify your email...",
+        );
+        router.push(
+          `/verify-email?token=${encodeURIComponent(data.verificationToken)}`,
+        );
+        return;
+      }
       setSuccess(
         "Account created successfully. Please verify your email before signing in.",
       );
