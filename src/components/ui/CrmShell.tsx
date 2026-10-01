@@ -58,7 +58,6 @@ const navGroups: NavGroup[] = [
     title: "Growth & Analytics",
     items: [
       { label: "Competitors", href: "/competitors", icon: "target" },
-      { label: "Ad Campaigns", href: "/ads", icon: "trend" },
       { label: "Analytics & Reports", href: "/analytics", icon: "chart" },
     ],
   },

@@ -44,10 +44,6 @@ export const API_CONFIG = {
     // Competitors
     COMPETITORS: "/v1/competitors",
 
-    // Ad Campaigns & Paid Ads ROI
-    ADS_CAMPAIGNS: "/v1/ads/campaigns",
-    ADS_SUMMARY: "/v1/ads/summary",
-
     // Analytics & Reports
     ANALYTICS_SOCIAL: "/v1/analytics/social",
     ANALYTICS_WEB: "/v1/analytics/web",
@@ -180,13 +176,6 @@ export const api = {
     create: () => getApiUrl(API_CONFIG.ENDPOINTS.COMPETITORS),
     delete: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.COMPETITORS}/${pathSegment(id)}`),
     sync: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.COMPETITORS}/${pathSegment(id)}/sync`),
-  },
-  ads: {
-    campaigns: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.ADS_CAMPAIGNS}${query}`),
-    create: () => getApiUrl(API_CONFIG.ENDPOINTS.ADS_CAMPAIGNS),
-    update: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.ADS_CAMPAIGNS}/${pathSegment(id)}`),
-    delete: (id: string) => getApiUrl(`${API_CONFIG.ENDPOINTS.ADS_CAMPAIGNS}/${pathSegment(id)}`),
-    summary: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.ADS_SUMMARY}${query}`),
   },
   analytics: {
     social: (query = "") => getApiUrl(`${API_CONFIG.ENDPOINTS.ANALYTICS_SOCIAL}${query}`),
