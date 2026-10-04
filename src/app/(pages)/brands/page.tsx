@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
 import Modal from "@/src/components/ui/Modal";
@@ -13,17 +14,16 @@ import type { Brand, BrandMember } from "@/src/lib/schemas";
 
 export default function BrandsPage() {
   const toast = useToast();
+  const queryClient = useQueryClient();
+
   const brandNameId = useId();
   const timezoneId = useId();
   const memberEmailId = useId();
   const memberRoleId = useId();
 
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [timezone, setTimezone] = useState("UTC");
   const [creating, setCreating] = useState(false);
-  const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
 
   // Edit brand state
@@ -45,27 +45,19 @@ export default function BrandsPage() {
 
   const getBrandId = (b: Brand) => b.id || b._id || "";
 
-  async function loadBrands() {
-    setLoading(true);
-    try {
+  // TanStack Query: Brands
+  const {
+    data: brands = [],
+    isLoading: loading,
+    refetch: refetchBrands,
+  } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
       const resp = await authJsonFetch<{ data?: Brand[]; brands?: Brand[] }>(api.brands.list());
       const list = resp?.data || resp?.brands || [];
-      const normalized = list.map((b) => ({ ...b, _id: getBrandId(b) }));
-      setBrands(normalized);
-      if (normalized.length > 0 && !activeBrandId) {
-        setActiveBrandId(normalized[0]._id!);
-        setSelectedBrand(normalized[0]);
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load brand workspaces.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadBrands();
-  }, []);
+      return list.map((b) => ({ ...b, _id: getBrandId(b) }));
+    },
+  });
 
   async function handleCreateBrand(e: React.FormEvent) {
     e.preventDefault();
@@ -78,7 +70,7 @@ export default function BrandsPage() {
       });
       setName("");
       toast.success(`Brand workspace "${name.trim()}" created successfully!`);
-      await loadBrands();
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to create brand workspace.");
     } finally {
@@ -103,7 +95,7 @@ export default function BrandsPage() {
       });
       toast.success(`Workspace updated successfully!`);
       setEditingBrand(null);
-      await loadBrands();
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to update workspace.");
     } finally {
@@ -118,12 +110,11 @@ export default function BrandsPage() {
     try {
       await authJsonFetch(api.brands.delete(bId), { method: "DELETE" });
       toast.success(`Workspace "${brandToDelete.name}" deleted.`);
-      if (activeBrandId === bId) {
-        setActiveBrandId(null);
+      if (selectedBrand && getBrandId(selectedBrand) === bId) {
         setSelectedBrand(null);
       }
       setBrandToDelete(null);
-      await loadBrands();
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to delete brand workspace.");
     } finally {
@@ -143,7 +134,7 @@ export default function BrandsPage() {
       });
       toast.success(`Invited ${memberEmail.trim()} as ${memberRole}.`);
       setMemberEmail("");
-      await loadBrands();
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to invite member.");
     } finally {
@@ -160,7 +151,7 @@ export default function BrandsPage() {
       });
       toast.success("Team member removed from workspace.");
       setMemberToRemove(null);
-      await loadBrands();
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to remove member.");
     } finally {
@@ -178,7 +169,11 @@ export default function BrandsPage() {
         window.location.href = "/signin";
       }}
       actions={
-        <button type="button" className="outline-btn" onClick={() => loadBrands()}>
+        <button
+          type="button"
+          className="outline-btn"
+          onClick={() => refetchBrands()}
+        >
           Refresh Workspaces
         </button>
       }

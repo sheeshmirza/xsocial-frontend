@@ -1,6 +1,7 @@
 import { api } from "@/src/config/api";
 import { AuthResponseSchema, TokenSet } from "@/src/lib/schemas";
 import { telemetry } from "@/src/lib/telemetry";
+import type { z } from "zod";
 
 const ACCESS_TOKEN_KEY = "xs.accessToken";
 const REFRESH_TOKEN_KEY = "xs.refreshToken";
@@ -165,14 +166,18 @@ export const logoutSession = async () => {
   const refreshToken = getRefreshToken();
   try {
     if (refreshToken) {
-      await fetchWithTimeout(api.auth.logout(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getAccessToken()}`,
+      await fetchWithTimeout(
+        api.auth.logout(),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          body: JSON.stringify({ refreshToken }),
         },
-        body: JSON.stringify({ refreshToken }),
-      }, 5000);
+        5000,
+      );
     }
   } catch (error) {
     telemetry.captureException(error, { context: "logout" });
@@ -198,13 +203,17 @@ const runRefreshSession = async (): Promise<string> => {
   }
 
   try {
-    const response = await fetchWithRetry(api.auth.refresh(), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetchWithRetry(
+      api.auth.refresh(),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
       },
-      body: JSON.stringify({ refreshToken }),
-    }, 1);
+      1,
+    );
 
     const rawData = await parseJsonSafely(response);
     if (!response.ok) {
@@ -357,6 +366,7 @@ export class ApiHttpError extends Error {
 export const authJsonFetch = async <T = any>(
   input: RequestInfo | URL,
   init: RequestInit = {},
+  schema?: z.ZodType<T>,
 ): Promise<T> => {
   const response = await authFetch(input, init);
   const payload = await parseJsonSafely(response);
@@ -384,12 +394,27 @@ export const authJsonFetch = async <T = any>(
     throw new ApiHttpError(response.status, message, payload);
   }
 
+  if (schema) {
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      telemetry.trackEvent({
+        name: "schema_validation_warning",
+        category: "network",
+        severity: "warning",
+        data: { url: String(input), issues: parsed.error.issues },
+      });
+      return payload as T;
+    }
+    return parsed.data;
+  }
+
   return payload as T;
 };
 
 export const jsonFetch = async <T = any>(
   input: RequestInfo | URL,
   init: RequestInit = {},
+  schema?: z.ZodType<T>,
 ): Promise<T> => {
   const response = await fetchWithRetry(input, init);
   const payload = await parseJsonSafely(response);
@@ -397,6 +422,20 @@ export const jsonFetch = async <T = any>(
   if (!response.ok) {
     const message = payload?.message || payload?.error || `Request failed with status ${response.status}`;
     throw new ApiHttpError(response.status, message, payload);
+  }
+
+  if (schema) {
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      telemetry.trackEvent({
+        name: "schema_validation_warning",
+        category: "network",
+        severity: "warning",
+        data: { url: String(input), issues: parsed.error.issues },
+      });
+      return payload as T;
+    }
+    return parsed.data;
   }
 
   return payload as T;

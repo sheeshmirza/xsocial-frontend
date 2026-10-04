@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import AppIcon from "@/src/components/ui/AppIcon";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CrmShell from "@/src/components/ui/CrmShell";
 import ErrorBoundary from "@/src/components/ui/ErrorBoundary";
 import { useToast } from "@/src/components/ui/ToastContext";
@@ -12,6 +12,7 @@ import PublishedPostsTable from "@/src/components/dashboard/PublishedPostsTable"
 import PostApprovalsModal from "@/src/components/dashboard/PostApprovalsModal";
 import { api, SUPPORTED_SOCIAL_PLATFORMS } from "@/src/config/api";
 import { authJsonFetch, clearSession, logoutSession } from "@/src/lib/session";
+import { SocialAccountsResponseSchema } from "@/src/lib/schemas";
 import type { PostItem, SocialAccount } from "@/src/lib/schemas";
 
 const supportedPlatformSet = new Set<string>(SUPPORTED_SOCIAL_PLATFORMS);
@@ -28,15 +29,9 @@ const normalizeSocialAccount = (account: any): SocialAccount => {
 
 export default function DashboardPage() {
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(true);
   const [accountFilterIds, setAccountFilterIds] = useState<string[]>([]);
-
-  const [posts, setPosts] = useState<PostItem[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
-
-  // Approvals Modal state
   const [approvalsModalOpen, setApprovalsModalOpen] = useState(false);
 
   const localTimezone = useMemo(
@@ -49,92 +44,71 @@ export default function DashboardPage() {
     window.location.href = "/signin";
   };
 
-  async function loadAccounts(signal?: AbortSignal) {
-    try {
-      setAccountsLoading(true);
-      const payload = await authJsonFetch<{ data?: any[] }>(api.social.accounts(), { signal });
-      const rawAccounts = Array.isArray(payload?.data) ? payload.data : [];
-      setAccounts(
-        rawAccounts
+  // TanStack Query: Social Accounts
+  const {
+    data: accounts = [],
+    isLoading: accountsLoading,
+  } = useQuery({
+    queryKey: ["social-accounts"],
+    queryFn: async () => {
+      try {
+        const payload = await authJsonFetch<{ data?: any[] }>(
+          api.social.accounts(),
+          {},
+          SocialAccountsResponseSchema,
+        );
+        const rawAccounts = Array.isArray(payload?.data) ? payload.data : [];
+        return rawAccounts
           .map(normalizeSocialAccount)
-          .filter((acc) => supportedPlatformSet.has(acc.platform)),
-      );
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      const msg = error instanceof Error ? error.message : "Failed to load social accounts.";
-      if (msg.toLowerCase().includes("session expired")) {
-        redirectToSignIn();
-        return;
+          .filter((acc) => supportedPlatformSet.has(acc.platform));
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Failed to load social accounts.";
+        if (msg.toLowerCase().includes("session expired")) {
+          redirectToSignIn();
+        }
+        throw error;
       }
-      toast.error(msg);
-    } finally {
-      setAccountsLoading(false);
-    }
-  }
+    },
+  });
 
-  async function loadPosts(signal?: AbortSignal) {
-    try {
-      setPostsLoading(true);
-      const params = new URLSearchParams();
-      params.append("limit", "100");
-      params.append("sortBy", "createdAt");
-      params.append("order", "desc");
-      accountFilterIds.forEach((id) => params.append("accountIds", id));
+  // TanStack Query: Posts
+  const {
+    data: posts = [],
+    isLoading: postsLoading,
+    refetch: refetchPosts,
+  } = useQuery({
+    queryKey: ["posts", accountFilterIds],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams();
+        params.append("limit", "100");
+        params.append("sortBy", "createdAt");
+        params.append("order", "desc");
+        accountFilterIds.forEach((id) => params.append("accountIds", id));
 
-      const payload = await authJsonFetch<{ data?: PostItem[] }>(
-        api.posts.list(`?${params.toString()}`),
-        { signal },
-      );
+        const payload = await authJsonFetch<{ data?: PostItem[] }>(
+          api.posts.list(`?${params.toString()}`),
+        );
 
-      const items = Array.isArray(payload?.data)
-        ? payload.data
-        : Array.isArray(payload)
-          ? (payload as any)
-          : [];
+        const items = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? (payload as any)
+            : [];
 
-      const normalized = items.map((p: any) => ({
-        ...p,
-        _id: p.id || p._id,
-      }));
-
-      setPosts(normalized);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      const msg = error instanceof Error ? error.message : "Unable to load workspace posts.";
-      if (msg.toLowerCase().includes("session expired")) {
-        redirectToSignIn();
-        return;
+        return items.map((p: any) => ({
+          ...p,
+          _id: p.id || p._id,
+        }));
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unable to load workspace posts.";
+        if (msg.toLowerCase().includes("session expired")) {
+          redirectToSignIn();
+        }
+        throw error;
       }
-      toast.error(msg);
-    } finally {
-      setPostsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadAccounts(controller.signal);
-
-    // Parse notification from query string if present
-    if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search);
-      const status = p.get("status");
-      const message = p.get("message");
-      if (status && message) {
-        if (status === "success") toast.success(message);
-        else toast.error(message);
-        window.history.replaceState({}, "", "/dashboard");
-      }
-    }
-
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadPosts(controller.signal);
-    return () => controller.abort();
-  }, [accountFilterIds]);
+    },
+  });
 
   const toggleAccountFilter = (accountId: string) => {
     setAccountFilterIds((prev) =>
@@ -144,6 +118,10 @@ export default function DashboardPage() {
 
   const clearAccountFilters = () => {
     setAccountFilterIds([]);
+  };
+
+  const handlePostMutated = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["posts"] });
   };
 
   // Filtered views
@@ -198,7 +176,11 @@ export default function DashboardPage() {
               Approvals Queue ({pendingApprovalPosts.length})
             </button>
           )}
-          <button type="button" className="outline-btn text-xs" onClick={() => loadPosts()}>
+          <button
+            type="button"
+            className="outline-btn text-xs"
+            onClick={() => refetchPosts()}
+          >
             Refresh Feeds
           </button>
         </div>
@@ -206,16 +188,13 @@ export default function DashboardPage() {
       filters={
         <>
           <div className="filter-chip">
-            <AppIcon name="users" className="app-icon" />
             Active handles: {accounts.length}
           </div>
           <div className="filter-chip">
-            <AppIcon name="calendar" className="app-icon" />
             Scheduled queue: {scheduledPosts.length}
           </div>
           <div className="filter-chip">
-            <AppIcon name="publish" className="app-icon" />
-            Total items: {posts.length}
+            Published total: {publishedPosts.length}
           </div>
         </>
       }
@@ -236,7 +215,7 @@ export default function DashboardPage() {
           <PostComposer
             accounts={accounts}
             localTimezone={localTimezone}
-            onPostCreated={loadPosts}
+            onPostCreated={handlePostMutated}
           />
         </ErrorBoundary>
 
@@ -245,7 +224,7 @@ export default function DashboardPage() {
             posts={scheduledPosts}
             accounts={accounts}
             loading={postsLoading}
-            onReload={loadPosts}
+            onReload={handlePostMutated}
             localTimezone={localTimezone}
           />
         </ErrorBoundary>
@@ -255,18 +234,17 @@ export default function DashboardPage() {
             <PublishedPostsTable
               posts={publishedPosts}
               loading={postsLoading}
-              onReload={loadPosts}
+              onReload={handlePostMutated}
             />
           </ErrorBoundary>
         </div>
       </div>
 
-      {/* Approvals Modal (Complete Backend Mapping for /submit-approval, /approve, /reject) */}
       <PostApprovalsModal
         isOpen={approvalsModalOpen}
         onClose={() => setApprovalsModalOpen(false)}
         pendingPosts={pendingApprovalPosts}
-        onReload={loadPosts}
+        onReload={handlePostMutated}
       />
     </CrmShell>
   );

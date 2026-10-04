@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   api,
   type SupportedSocialPlatform,
@@ -14,6 +15,7 @@ import { CardSkeleton } from "@/src/components/ui/Skeleton";
 import { useToast } from "@/src/components/ui/ToastContext";
 import ErrorBoundary from "@/src/components/ui/ErrorBoundary";
 import { authJsonFetch, clearSession, logoutSession } from "@/src/lib/session";
+import { SocialAccountsResponseSchema } from "@/src/lib/schemas";
 import type { SocialAccount } from "@/src/lib/schemas";
 
 type Platform = SupportedSocialPlatform;
@@ -52,8 +54,8 @@ const normalizeSocialAccount = (account: SocialAccount): SocialAccount => {
 
 export default function AccountsPage() {
   const toast = useToast();
-  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [connecting, setConnecting] = useState<Platform | null>(null);
   const [busyAccountId, setBusyAccountId] = useState<string | null>(null);
   const [accountToDisconnect, setAccountToDisconnect] = useState<SocialAccount | null>(null);
@@ -63,6 +65,36 @@ export default function AccountsPage() {
     clearSession();
     window.location.href = "/signin";
   };
+
+  // TanStack Query Caching
+  const {
+    data: accounts = [],
+    isLoading: loading,
+    refetch: refetchAccounts,
+  } = useQuery({
+    queryKey: ["social-accounts"],
+    queryFn: async () => {
+      try {
+        const payload = await authJsonFetch<SocialAccountsResponse>(
+          api.social.accounts(),
+          {},
+          SocialAccountsResponseSchema,
+        );
+        const items = Array.isArray(payload?.data) ? payload.data : [];
+        return items
+          .map(normalizeSocialAccount)
+          .filter((account): account is SocialAccount =>
+            supportedPlatformSet.has(account.platform),
+          );
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unable to load social accounts.";
+        if (msg.toLowerCase().includes("session expired")) {
+          redirectToSignIn();
+        }
+        throw error;
+      }
+    },
+  });
 
   const connectedAccounts = accounts;
 
@@ -92,34 +124,6 @@ export default function AccountsPage() {
       "Linked Account";
     return { kindLabel, primary };
   };
-
-  async function loadAccounts(signal?: AbortSignal) {
-    try {
-      setLoading(true);
-      const payload = await authJsonFetch<SocialAccountsResponse>(api.social.accounts(), {
-        signal,
-      });
-      const items = Array.isArray(payload?.data) ? payload.data : [];
-      setAccounts(
-        items.map(normalizeSocialAccount).filter((account): account is SocialAccount =>
-          supportedPlatformSet.has(account.platform),
-        ),
-      );
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return;
-      }
-      const errorMessage =
-        error instanceof Error ? error.message : "Unable to load social accounts.";
-      if (errorMessage.toLowerCase().includes("session expired")) {
-        redirectToSignIn();
-        return;
-      }
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleConnect(platform: SupportedSocialPlatform) {
     try {
@@ -157,7 +161,7 @@ export default function AccountsPage() {
         method: "POST",
         body: JSON.stringify({ socialId: accountId }),
       });
-      await loadAccounts();
+      await queryClient.invalidateQueries({ queryKey: ["social-accounts"] });
       toast.success("Account authorization token refreshed successfully!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to refresh token.");
@@ -175,7 +179,7 @@ export default function AccountsPage() {
       });
       toast.success("Social account disconnected.");
       setAccountToDisconnect(null);
-      await loadAccounts();
+      await queryClient.invalidateQueries({ queryKey: ["social-accounts"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to disconnect account.");
     } finally {
@@ -203,13 +207,6 @@ export default function AccountsPage() {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-
-    const controller = new AbortController();
-    loadAccounts(controller.signal);
-
-    return () => {
-      controller.abort();
-    };
   }, []);
 
   return (
@@ -223,7 +220,11 @@ export default function AccountsPage() {
       }}
       actions={
         <>
-          <button type="button" className="outline-btn" onClick={() => loadAccounts()}>
+          <button
+            type="button"
+            className="outline-btn"
+            onClick={() => refetchAccounts()}
+          >
             Refresh Sync
           </button>
           <Link href="/dashboard" className="primary-btn">
