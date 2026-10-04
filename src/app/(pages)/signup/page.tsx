@@ -1,5 +1,3 @@
-//Reviewed
-
 import type { Metadata } from "next";
 import AuthForm from "@/src/components/auth/AuthForm";
 
