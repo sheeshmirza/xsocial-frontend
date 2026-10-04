@@ -57,7 +57,7 @@ export default function MCPAuthorizePage() {
       throw new Error(
         payload?.message ||
           payload?.error ||
-          "The OAuth request could not be completed.",
+          "Could not complete the sign-in request.",
       );
     }
     return payload;
@@ -68,7 +68,7 @@ export default function MCPAuthorizePage() {
     setError("");
 
     if (!transaction) {
-      setError("Start the connection from ChatGPT so a valid OAuth session can be created.");
+      setError("Please start the connection from ChatGPT to link your account.");
       return;
     }
 
@@ -94,7 +94,7 @@ export default function MCPAuthorizePage() {
         payload?.accessToken;
 
       if (!accessToken) {
-        throw new Error("XSocial did not return a valid access token.");
+        throw new Error("Could not verify your sign-in.");
       }
 
       setOAuthAccessToken(accessToken);
@@ -106,7 +106,7 @@ export default function MCPAuthorizePage() {
       });
       setPassword("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed.");
+      setError(err instanceof Error ? err.message : "Sign-in failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -116,7 +116,7 @@ export default function MCPAuthorizePage() {
     setError("");
 
     if (!transaction) {
-      setError("Start the connection from ChatGPT so a valid OAuth session can be created.");
+      setError("Please start the connection from ChatGPT to link your account.");
       return;
     }
 
@@ -149,12 +149,12 @@ export default function MCPAuthorizePage() {
       setOAuthAccessToken("");
 
       if (!payload?.redirect_uri) {
-        throw new Error("XSocial did not return the OAuth redirect URL.");
+        throw new Error("Could not find return address.");
       }
 
       // Security: Validate redirect_uri to prevent Open Redirect attacks
       if (!isSafeRedirectUri(payload.redirect_uri)) {
-        throw new Error("Invalid redirect URI received from authorization server.");
+        throw new Error("Could not verify security of the return address.");
       }
 
       window.location.assign(payload.redirect_uri);
@@ -162,7 +162,7 @@ export default function MCPAuthorizePage() {
       setError(
         err instanceof Error
           ? err.message
-          : "The OAuth request could not be completed.",
+          : "Could not complete connection. Please try again.",
       );
       setDecisionLoading(false);
     }

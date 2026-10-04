@@ -152,7 +152,7 @@ export default function SettingsPage() {
         window.location.href = "/signin";
       }}
     >
-      <ErrorBoundary fallbackTitle="Settings encountered an error">
+      <ErrorBoundary fallbackTitle="Could not load settings">
         {/* Tabs */}
         <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
           <button
@@ -175,14 +175,14 @@ export default function SettingsPage() {
                 : "border-transparent text-slate-400 hover:text-slate-600"
             }`}
           >
-            Developer API Keys ({apiKeys.length})
+            API Keys ({apiKeys.length})
           </button>
         </div>
 
         {profileQuery.isError ? (
           <ErrorFallback
             type="500"
-            title="Unable to load profile"
+            title="Could not load your profile"
             message={profileQuery.error instanceof Error ? profileQuery.error.message : "Failed to load account settings."}
             onRetry={() => {
               profileQuery.refetch();
@@ -197,7 +197,7 @@ export default function SettingsPage() {
         ) : activeTab === "profile" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="crm-panel p-6 rounded-2xl">
-              <h3 className="font-bold text-base mb-4 text-slate-900">Account Profile</h3>
+              <h3 className="font-bold text-base mb-4 text-slate-900">Your Profile</h3>
               <form onSubmit={saveProfile} className="flex flex-col gap-4">
                 <div>
                   <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">
@@ -285,10 +285,10 @@ export default function SettingsPage() {
             {createdRawKey && (
               <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
                 <h4 className="font-bold text-xs uppercase tracking-wider mb-1">
-                  Copy Your Secret API Key
+                  Save Your API Key
                 </h4>
                 <p className="text-xs mb-2">
-                  This key will not be displayed again. Store it securely in your environment variables.
+                  This key will not be shown again. Please copy and store it somewhere safe.
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="bg-white px-3 py-1.5 rounded border border-amber-300 font-mono text-xs select-all flex-1">
@@ -298,7 +298,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(createdRawKey);
-                      toast.success("API key copied to clipboard!");
+                      toast.success("Key copied to clipboard!");
                     }}
                     className="text-xs bg-amber-700 hover:bg-amber-800 text-white px-3.5 py-1.5 rounded font-medium transition-colors"
                   >
@@ -309,11 +309,11 @@ export default function SettingsPage() {
             )}
 
             <div className="crm-panel p-6 rounded-2xl">
-              <h3 className="font-bold text-base mb-4 text-slate-900">Generate Developer API Key</h3>
+              <h3 className="font-bold text-base mb-4 text-slate-900">Create an API Key</h3>
               <form onSubmit={handleCreateApiKey} className="flex gap-2 max-w-md">
                 <input
                   type="text"
-                  placeholder="Key Description (e.g. CI/CD Publishing Pipeline)"
+                  placeholder="Key purpose (e.g. Website Integration)"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                   className="flex-1 text-xs px-3 py-2 border rounded-lg bg-white"
@@ -324,16 +324,16 @@ export default function SettingsPage() {
                   disabled={creatingKey || !newKeyName.trim()}
                   className="primary-btn text-xs px-4 py-2"
                 >
-                  {creatingKey ? "Generating..." : "+ Generate Key"}
+                  {creatingKey ? "Creating..." : "+ Create Key"}
                 </button>
               </form>
 
               <div className="mt-8">
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                  Active API Keys ({apiKeys.length})
+                  Your API Keys ({apiKeys.length})
                 </h4>
                 {apiKeys.length === 0 ? (
-                  <p className="text-xs text-slate-400">No active API keys found.</p>
+                  <p className="text-xs text-slate-400">You haven't created any API keys yet.</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {apiKeys.map((k) => (
@@ -343,8 +343,8 @@ export default function SettingsPage() {
                       >
                         <div>
                           <p className="font-semibold text-xs text-slate-900">{k.name}</p>
-                          <p className="font-mono text-[10px] text-slate-500 mt-0.5">
-                            ID: {k.id} • Created: {new Date(k.createdAt).toLocaleDateString()}
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Created: {new Date(k.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <button
@@ -352,7 +352,7 @@ export default function SettingsPage() {
                           onClick={() => setKeyToDelete(k.id)}
                           className="text-xs text-red-600 hover:underline"
                         >
-                          Revoke
+                          Delete
                         </button>
                       </div>
                     ))}
@@ -364,13 +364,13 @@ export default function SettingsPage() {
         )}
       </ErrorBoundary>
 
-      {/* Revoke API Key Modal */}
+      {/* Delete API Key Modal */}
       <Modal
         isOpen={Boolean(keyToDelete)}
         onClose={() => setKeyToDelete(null)}
-        title="Revoke API Key?"
-        description="Any integrations or automated scripts using this API key will immediately lose access to your workspace."
-        confirmLabel="Revoke Key Permanently"
+        title="Delete API Key?"
+        description="Any tools or scripts using this key will immediately lose access."
+        confirmLabel="Delete Key"
         isDestructive
         onConfirm={confirmDeleteApiKey}
         isLoading={deletingKey}
