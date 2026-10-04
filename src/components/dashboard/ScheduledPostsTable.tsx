@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 import Modal from "@/src/components/ui/Modal";
@@ -220,6 +221,12 @@ export default function ScheduledPostsTable({
           </span>
           Scheduled Posts ({posts.length})
         </h3>
+        <Link
+          href="/scheduled"
+          className="text-xs font-semibold text-sky-700 hover:text-sky-900 inline-flex items-center gap-1"
+        >
+          Calendar Timeline &rarr;
+        </Link>
       </div>
 
       {loading ? (
