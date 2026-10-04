@@ -39,7 +39,7 @@ export default function OAuthCallbackHandler({
   const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState(
-    `Finalizing your ${label} connection...`,
+    `Connecting your ${label} account...`,
   );
   const executedRef = useRef(false);
 
@@ -64,7 +64,7 @@ export default function OAuthCallbackHandler({
       if (!isSupportedProvider(provider)) {
         return redirect(
           "error",
-          `${label} integration is not enabled in this backend. Supported providers: ${SUPPORTED_SOCIAL_PLATFORMS.join(
+          `${label} is not available right now. Available options: ${SUPPORTED_SOCIAL_PLATFORMS.join(
             ", ",
           )}.`,
         );
@@ -80,14 +80,14 @@ export default function OAuthCallbackHandler({
         return redirect("error", errorDescription || error);
       }
       if (!code) {
-        return redirect("error", "Missing OAuth authorization code.");
+        return redirect("error", "Sign-in information was missing. Please try connecting again.");
       }
 
       const callbackKey = `oauth-callback:${provider}:${code}:${state || ""}`;
       const callbackInFlightKey = `${callbackKey}:in-flight`;
 
       if (window.sessionStorage.getItem(callbackKey)) {
-        return redirect("success", `${label} account connected successfully.`);
+        return redirect("success", `Your ${label} account is now connected!`);
       }
       if (window.sessionStorage.getItem(callbackInFlightKey)) {
         return;
@@ -114,13 +114,13 @@ export default function OAuthCallbackHandler({
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
-          throw new Error(data?.message || `Failed to connect ${label} account.`);
+          throw new Error(data?.message || `Could not connect your ${label} account.`);
         }
 
         window.sessionStorage.setItem(callbackKey, "handled");
         redirect(
           "success",
-          data?.message || `${label} account connected successfully.`,
+          data?.message || `Your ${label} account is now connected!`,
         );
       } catch (err) {
         window.sessionStorage.removeItem(callbackKey);
@@ -128,7 +128,7 @@ export default function OAuthCallbackHandler({
           "error",
           err instanceof Error
             ? err.message
-            : "Unable to complete authentication.",
+            : "Could not complete sign-in. Please try again.",
         );
       } finally {
         window.sessionStorage.removeItem(callbackInFlightKey);
@@ -161,14 +161,14 @@ export default function OAuthCallbackHandler({
               className="app-icon"
             />
           </span>
-          <p className="subtitle-inline">OAuth handshake</p>
+          <p className="subtitle-inline">Connecting Account</p>
         </div>
         <h1>
           {status === "loading"
             ? "Connecting your account..."
             : status === "success"
-              ? "Account connected"
-              : "Connection failed"}
+              ? "Account connected!"
+              : "Could not connect"}
         </h1>
         <p className="subtitle">{message}</p>
         {status === "error" && (
@@ -177,7 +177,7 @@ export default function OAuthCallbackHandler({
               href="/accounts"
               className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
             >
-              Return to Social Accounts
+              Back to Connected Accounts
             </Link>
           </div>
         )}

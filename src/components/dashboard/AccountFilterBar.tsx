@@ -50,18 +50,18 @@ export default function AccountFilterBar({
         <span className="icon-token" aria-hidden="true">
           <AppIcon name="home" className="app-icon" />
         </span>
-        Content Overview & Workspace Stats
+        Your Content at a Glance
       </h2>
       <p>
-        Monitor publishing activity and filter real-time metrics across your connected handles.
+        Keep track of your social posts and see how your channels are doing.
       </p>
 
       <div className="dashboard-account-filter">
         <div className="dashboard-account-filter-head">
           <div>
-            <h3 className="section-title section-title-small">Account Filter</h3>
+            <h3 className="section-title section-title-small">Filter by Account</h3>
             <p>
-              Select profiles to isolate analytics and post queues. Leave empty to view all connected accounts.
+              Choose an account to focus on its posts, or view all of them together.
             </p>
           </div>
           <button
@@ -75,14 +75,14 @@ export default function AccountFilterBar({
         </div>
 
         {loading ? (
-          <p className="composer-empty">Loading connected profiles...</p>
+          <p className="composer-empty">Loading your accounts...</p>
         ) : !accounts.length ? (
           <p className="composer-empty">
-            No connected accounts found. Go to the{" "}
+            You haven't connected any accounts yet. Head over to{" "}
             <Link href="/accounts" className="link-inline">
-              Social Accounts
+              Connected Accounts
             </Link>{" "}
-            page to authorize your handles.
+            to link your Instagram or LinkedIn.
           </p>
         ) : (
           <>
@@ -101,8 +101,8 @@ export default function AccountFilterBar({
             </div>
             <p className="composer-empty">
               {selectedFilterIds.length
-                ? `Showing dashboard data for ${selectedFilterIds.length} selected profile(s).`
-                : "Showing workspace data for all connected channels."}
+                ? `Showing posts for ${selectedFilterIds.length} selected account(s).`
+                : "Showing posts for all your connected accounts."}
             </p>
           </>
         )}
@@ -119,15 +119,15 @@ export default function AccountFilterBar({
         ) : (
           <>
             <article className="kpi-card">
-              <p className="kpi-label">Active Handles</p>
+              <p className="kpi-label">Connected Accounts</p>
               <p className="kpi-value">{metrics.connectedCount}</p>
             </article>
             <article className="kpi-card">
-              <p className="kpi-label">Draft Posts</p>
+              <p className="kpi-label">Drafts</p>
               <p className="kpi-value">{metrics.drafts}</p>
             </article>
             <article className="kpi-card">
-              <p className="kpi-label">Scheduled Jobs</p>
+              <p className="kpi-label">Scheduled Posts</p>
               <p className="kpi-value">{metrics.scheduled}</p>
             </article>
             <article className="kpi-card">

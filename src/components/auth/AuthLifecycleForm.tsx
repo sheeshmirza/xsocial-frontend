@@ -12,19 +12,19 @@ type Props = { mode: Mode };
 
 const copy: Record<Mode, { title: string; subtitle: string; button: string }> = {
   verify: {
-    title: "Verify your email",
-    subtitle: "Paste the verification token from your email to activate your workspace.",
-    button: "Verify Email",
+    title: "Confirm your email",
+    subtitle: "Paste the confirmation code from your email to activate your account.",
+    button: "Confirm Email",
   },
   forgot: {
-    title: "Reset your password",
-    subtitle: "Enter your registered email and we will send password reset instructions.",
-    button: "Send Reset Instructions",
+    title: "Forgot your password?",
+    subtitle: "Enter your email address and we'll send you a link to choose a new password.",
+    button: "Send Reset Link",
   },
   reset: {
-    title: "Choose a new password",
-    subtitle: "Provide your verification token and select a new secure password.",
-    button: "Reset Password",
+    title: "Set a new password",
+    subtitle: "Enter your reset code and choose a new password to secure your account.",
+    button: "Save New Password",
   },
 };
 
@@ -84,7 +84,7 @@ export default function AuthLifecycleForm({ mode }: Props) {
     } catch (error) {
       setMessage({
         type: "error",
-        text: error instanceof Error ? error.message : "Request failed. Please verify the input.",
+        text: error instanceof Error ? error.message : "Something went wrong. Please check your information and try again.",
       });
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export default function AuthLifecycleForm({ mode }: Props) {
           <span className="icon-token" aria-hidden="true">
             <AppIcon name="shield" className="app-icon" />
           </span>
-          <p className="subtitle-inline">Account security</p>
+          <p className="subtitle-inline">Account Security</p>
         </div>
         <h1 id="lifecycle-title">{copy[mode].title}</h1>
         <p className="subtitle">{copy[mode].subtitle}</p>
@@ -121,13 +121,13 @@ export default function AuthLifecycleForm({ mode }: Props) {
           ) : (
             <>
               <div>
-                <label htmlFor={tokenId}>Verification token</label>
+                <label htmlFor={tokenId}>Confirmation code</label>
                 <input
                   id={tokenId}
                   value={token}
                   onChange={(event) => setToken(event.target.value)}
                   required
-                  placeholder="Paste token from email"
+                  placeholder="Paste the code from your email"
                 />
               </div>
               {mode === "reset" ? (
@@ -142,7 +142,7 @@ export default function AuthLifecycleForm({ mode }: Props) {
                     maxLength={128}
                     required
                     autoComplete="new-password"
-                    placeholder="Minimum 8 characters"
+                    placeholder="At least 8 characters"
                   />
                 </div>
               ) : null}
@@ -150,7 +150,7 @@ export default function AuthLifecycleForm({ mode }: Props) {
           )}
 
           <button type="submit" disabled={loading} className="primary-btn">
-            {loading ? "Processing..." : copy[mode].button}
+            {loading ? "Please wait..." : copy[mode].button}
           </button>
         </form>
 
