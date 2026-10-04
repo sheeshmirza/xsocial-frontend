@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   api,
   type SupportedSocialPlatform,
@@ -170,6 +171,16 @@ export default function OAuthCallbackHandler({
               : "Connection failed"}
         </h1>
         <p className="subtitle">{message}</p>
+        {status === "error" && (
+          <div className="mt-4">
+            <Link
+              href="/accounts"
+              className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+            >
+              Return to Social Accounts
+            </Link>
+          </div>
+        )}
       </section>
     </main>
   );

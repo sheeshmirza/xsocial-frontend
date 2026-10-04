@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CrmShell from "@/src/components/ui/CrmShell";
 import Modal from "@/src/components/ui/Modal";
 import { CardSkeleton } from "@/src/components/ui/Skeleton";
 import { useToast } from "@/src/components/ui/ToastContext";
 import ErrorBoundary from "@/src/components/ui/ErrorBoundary";
+import ErrorFallback from "@/src/components/ui/ErrorFallback";
 import { api } from "@/src/config/api";
 import { authJsonFetch, logoutSession } from "@/src/lib/session";
 import type { ApiKeyItem } from "@/src/lib/schemas";
@@ -19,56 +21,61 @@ interface Profile {
 
 export default function SettingsPage() {
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"profile" | "apikeys">("profile");
-  const [profile, setProfile] = useState<Profile | null>(null);
+
   const [fullName, setFullName] = useState("");
   const [timezone, setTimezone] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
   // API Keys state
-  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
   const [newKeyName, setNewKeyName] = useState("");
   const [createdRawKey, setCreatedRawKey] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState(false);
 
-  async function loadData() {
-    try {
-      const [pResp, kResp] = await Promise.all([
-        authJsonFetch<{ data?: Profile }>(api.users.me()),
-        authJsonFetch<{ data?: ApiKeyItem[] }>(api.developer.apiKeys()).catch(() => ({ data: [] })),
-      ]);
+  const profileQuery = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const resp = await authJsonFetch<{ data?: Profile }>(api.users.me());
+      return resp?.data || null;
+    },
+    staleTime: 60 * 1000,
+  });
 
-      const nextProfile = pResp?.data || null;
-      setProfile(nextProfile);
-      setFullName(nextProfile?.fullName || "");
-      setTimezone(nextProfile?.timezone || "UTC");
-      setApiKeys(kResp?.data || []);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load account settings.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const apiKeysQuery = useQuery({
+    queryKey: ["api-keys"],
+    queryFn: async () => {
+      const resp = await authJsonFetch<{ data?: ApiKeyItem[] }>(api.developer.apiKeys()).catch(() => ({ data: [] }));
+      return resp?.data || [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const profile = profileQuery.data ?? null;
+  const apiKeys = apiKeysQuery.data ?? [];
+  const loading = profileQuery.isLoading || apiKeysQuery.isLoading;
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (profile) {
+      setFullName(profile.fullName || "");
+      setTimezone(profile.timezone || "UTC");
+    }
+  }, [profile]);
 
   async function saveProfile(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      const resp = await authJsonFetch<{ data?: Profile }>(api.users.me(), {
+      await authJsonFetch<{ data?: Profile }>(api.users.me(), {
         method: "PUT",
         body: JSON.stringify({ fullName: fullName.trim(), timezone: timezone.trim() }),
       });
-      setProfile(resp?.data || profile);
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Profile details updated successfully.");
     } catch (err: any) {
       toast.error(err.message || "Failed to update profile.");
@@ -112,7 +119,7 @@ export default function SettingsPage() {
       setCreatedRawKey(generatedToken);
       setNewKeyName("");
       toast.success("New developer API key generated!");
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: ["api-keys"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to generate API key.");
     } finally {
@@ -127,7 +134,7 @@ export default function SettingsPage() {
       await authJsonFetch(api.developer.deleteApiKey(keyToDelete), { method: "DELETE" });
       toast.success("API key revoked permanently.");
       setKeyToDelete(null);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: ["api-keys"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to revoke API key.");
     } finally {
@@ -172,7 +179,17 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        {loading ? (
+        {profileQuery.isError ? (
+          <ErrorFallback
+            status={500}
+            title="Unable to load profile"
+            message={profileQuery.error instanceof Error ? profileQuery.error.message : "Failed to load account settings."}
+            onRetry={() => {
+              profileQuery.refetch();
+              apiKeysQuery.refetch();
+            }}
+          />
+        ) : loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <CardSkeleton />
             <CardSkeleton />
