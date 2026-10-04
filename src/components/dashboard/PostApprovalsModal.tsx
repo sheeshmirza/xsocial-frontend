@@ -30,10 +30,10 @@ export default function PostApprovalsModal({
     setProcessingId(postId);
     try {
       await authJsonFetch(api.posts.approve(postId), { method: "POST" });
-      toast.success("Post approved successfully! It has been scheduled for publication.");
+      toast.success("Post approved! It is now scheduled to be published.");
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Approval request failed.");
+      toast.error(error instanceof Error ? error.message : "Could not approve post.");
     } finally {
       setProcessingId(null);
     }
@@ -46,12 +46,12 @@ export default function PostApprovalsModal({
         method: "POST",
         body: JSON.stringify({ reason: rejectionReason.trim() }),
       });
-      toast.success("Post rejected and sent back to creator with revision comments.");
+      toast.success("Post sent back to creator with your notes.");
       setRejectingPostId(null);
       setRejectionReason("");
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Rejection request failed.");
+      toast.error(error instanceof Error ? error.message : "Could not return post.");
     } finally {
       setProcessingId(null);
     }
@@ -61,15 +61,15 @@ export default function PostApprovalsModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Client & Team Approvals Queue"
-      description="Review posts submitted by workspace members before they are queued for live publication."
+      title="Posts Needing Approval"
+      description="Review posts from your team before they are published."
       cancelLabel="Close"
     >
       <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1">
         {pendingPosts.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-xs">
-            <p className="font-semibold text-slate-700">No posts pending review.</p>
-            <p className="mt-1">All submitted content has been evaluated.</p>
+            <p className="font-semibold text-slate-700">No posts waiting for approval.</p>
+            <p className="mt-1">You're all caught up!</p>
           </div>
         ) : (
           pendingPosts.map((post) => (
@@ -80,15 +80,15 @@ export default function PostApprovalsModal({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="font-bold text-xs text-slate-900">
-                    {post.title || "Untitled Post Draft"}
+                    {post.title || "Untitled Post"}
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Created: {formatDate(post.createdAt)} • Targeting:{" "}
+                    Created: {formatDate(post.createdAt)} • Channels:{" "}
                     {post.selectedPlatforms.join(", ") || "All"}
                   </p>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                  Pending Review
+                  Needs Review
                 </span>
               </div>
 
@@ -99,7 +99,7 @@ export default function PostApprovalsModal({
               {rejectingPostId === post._id ? (
                 <div className="flex flex-col gap-2 p-3 bg-white rounded-lg border border-red-200">
                   <label className="text-[11px] font-semibold text-slate-700">
-                    Rejection Feedback (sent to creator):
+                    Notes for the author (what should be changed):
                   </label>
                   <textarea
                     value={rejectionReason}
@@ -122,7 +122,7 @@ export default function PostApprovalsModal({
                       disabled={processingId === post._id}
                       className="outline-btn danger-btn text-xs px-2.5 py-1"
                     >
-                      {processingId === post._id ? "Rejecting..." : "Confirm Rejection"}
+                      {processingId === post._id ? "Sending..." : "Send Back"}
                     </button>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function PostApprovalsModal({
                     disabled={processingId === post._id}
                     className="outline-btn danger-btn text-xs px-3 py-1.5"
                   >
-                    Reject with Feedback
+                    Request Changes
                   </button>
                   <button
                     type="button"
@@ -142,7 +142,7 @@ export default function PostApprovalsModal({
                     disabled={processingId === post._id}
                     className="primary-btn text-xs px-3 py-1.5"
                   >
-                    {processingId === post._id ? "Approving..." : "Approve & Schedule"}
+                    {processingId === post._id ? "Approving..." : "Approve Post"}
                   </button>
                 </div>
               )}

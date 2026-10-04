@@ -158,9 +158,9 @@ export default function DashboardPage() {
 
   return (
     <CrmShell
-      pageTitle="Workspace Dashboard"
-      pageSubtitle="Create, schedule, and track content across your authorized social handles."
-      breadcrumbs={["XSocial", "Workspace", "Dashboard"]}
+      pageTitle="Dashboard"
+      pageSubtitle="Create, schedule, and view posts across all your social media accounts."
+      breadcrumbs={["XSocial", "Dashboard"]}
       onSignOut={async () => {
         await logoutSession();
         window.location.href = "/signin";
@@ -173,7 +173,7 @@ export default function DashboardPage() {
               className="outline-btn text-xs font-semibold text-amber-700 border-amber-300 hover:bg-amber-50"
               onClick={() => setApprovalsModalOpen(true)}
             >
-              Approvals Queue ({pendingApprovalPosts.length})
+              Needs Approval ({pendingApprovalPosts.length})
             </button>
           )}
           <button
@@ -181,26 +181,26 @@ export default function DashboardPage() {
             className="outline-btn text-xs"
             onClick={() => refetchPosts()}
           >
-            Refresh Feeds
+            Refresh
           </button>
         </div>
       }
       filters={
         <>
           <div className="filter-chip">
-            Active handles: {accounts.length}
+            Accounts: {accounts.length}
           </div>
           <div className="filter-chip">
-            Scheduled queue: {scheduledPosts.length}
+            Scheduled: {scheduledPosts.length}
           </div>
           <div className="filter-chip">
-            Published total: {publishedPosts.length}
+            Published: {publishedPosts.length}
           </div>
         </>
       }
     >
       <div className="crm-grid crm-grid-dashboard">
-        <ErrorBoundary fallbackTitle="Analytics summary encountered an error">
+        <ErrorBoundary fallbackTitle="Could not display account stats">
           <AccountFilterBar
             accounts={accounts}
             loading={accountsLoading}
@@ -211,7 +211,7 @@ export default function DashboardPage() {
           />
         </ErrorBoundary>
 
-        <ErrorBoundary fallbackTitle="Content composer encountered an error">
+        <ErrorBoundary fallbackTitle="Could not load post creator">
           <PostComposer
             accounts={accounts}
             localTimezone={localTimezone}
@@ -219,7 +219,7 @@ export default function DashboardPage() {
           />
         </ErrorBoundary>
 
-        <ErrorBoundary fallbackTitle="Scheduled queue encountered an error">
+        <ErrorBoundary fallbackTitle="Could not load scheduled posts">
           <ScheduledPostsTable
             posts={scheduledPosts}
             accounts={accounts}
@@ -230,7 +230,7 @@ export default function DashboardPage() {
         </ErrorBoundary>
 
         <div className="col-span-12">
-          <ErrorBoundary fallbackTitle="Published history encountered an error">
+          <ErrorBoundary fallbackTitle="Could not load published posts">
             <PublishedPostsTable
               posts={publishedPosts}
               loading={postsLoading}
