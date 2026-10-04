@@ -363,6 +363,15 @@ export class ApiHttpError extends Error {
   }
 }
 
+export const getFriendlyHttpErrorMessage = (status: number): string => {
+  if (status === 400) return "Please check your information and try again.";
+  if (status === 401) return "Your session has expired. Please sign in again.";
+  if (status === 403) return "You do not have permission to perform this action.";
+  if (status === 404) return "The requested item could not be found.";
+  if (status >= 500) return "We ran into an unexpected problem on our end. Please try again shortly.";
+  return "Something went wrong. Please try again.";
+};
+
 export const authJsonFetch = async <T = any>(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -375,7 +384,7 @@ export const authJsonFetch = async <T = any>(
     const message =
       payload?.message ||
       payload?.error ||
-      `Request failed with status ${response.status}`;
+      getFriendlyHttpErrorMessage(response.status);
 
     if (response.status === 401) {
       clearSession();
@@ -420,7 +429,10 @@ export const jsonFetch = async <T = any>(
   const payload = await parseJsonSafely(response);
 
   if (!response.ok) {
-    const message = payload?.message || payload?.error || `Request failed with status ${response.status}`;
+    const message =
+      payload?.message ||
+      payload?.error ||
+      getFriendlyHttpErrorMessage(response.status);
     throw new ApiHttpError(response.status, message, payload);
   }
 
