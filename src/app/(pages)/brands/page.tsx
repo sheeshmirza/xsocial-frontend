@@ -69,10 +69,10 @@ export default function BrandsPage() {
         body: JSON.stringify({ name: name.trim(), timezone }),
       });
       setName("");
-      toast.success(`Brand workspace "${name.trim()}" created successfully!`);
+      toast.success(`"${name.trim()}" workspace created!`);
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to create brand workspace.");
+      toast.error(err.message || "Could not create workspace.");
     } finally {
       setCreating(false);
     }
@@ -93,11 +93,11 @@ export default function BrandsPage() {
         method: "PUT",
         body: JSON.stringify({ name: editName.trim(), timezone: editTimezone }),
       });
-      toast.success(`Workspace updated successfully!`);
+      toast.success("Workspace details saved!");
       setEditingBrand(null);
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to update workspace.");
+      toast.error(err.message || "Could not update workspace.");
     } finally {
       setSavingEdit(false);
     }
@@ -109,14 +109,14 @@ export default function BrandsPage() {
     setDeleting(true);
     try {
       await authJsonFetch(api.brands.delete(bId), { method: "DELETE" });
-      toast.success(`Workspace "${brandToDelete.name}" deleted.`);
+      toast.success(`"${brandToDelete.name}" deleted.`);
       if (selectedBrand && getBrandId(selectedBrand) === bId) {
         setSelectedBrand(null);
       }
       setBrandToDelete(null);
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete brand workspace.");
+      toast.error(err.message || "Could not delete workspace.");
     } finally {
       setDeleting(false);
     }
@@ -132,11 +132,11 @@ export default function BrandsPage() {
         method: "POST",
         body: JSON.stringify({ email: memberEmail.trim(), role: memberRole }),
       });
-      toast.success(`Invited ${memberEmail.trim()} as ${memberRole}.`);
+      toast.success(`Sent invitation to ${memberEmail.trim()}.`);
       setMemberEmail("");
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to invite member.");
+      toast.error(err.message || "Could not send invitation.");
     } finally {
       setAddingMember(false);
     }
@@ -149,11 +149,11 @@ export default function BrandsPage() {
       await authJsonFetch(api.brands.removeMember(memberToRemove.brandId, memberToRemove.member.userId), {
         method: "DELETE",
       });
-      toast.success("Team member removed from workspace.");
+      toast.success("Team member removed.");
       setMemberToRemove(null);
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to remove member.");
+      toast.error(err.message || "Could not remove team member.");
     } finally {
       setRemovingMember(false);
     }
@@ -162,8 +162,8 @@ export default function BrandsPage() {
   return (
     <CrmShell
       pageTitle="Brands & Workspaces"
-      pageSubtitle="Organize clients, handles, team roles, and approval policies in isolated RBAC workspaces."
-      breadcrumbs={["XSocial", "Workspaces", "Brands"]}
+      pageSubtitle="Organize your clients and team members into dedicated workspaces."
+      breadcrumbs={["XSocial", "Workspaces"]}
       onSignOut={async () => {
         await logoutSession();
         window.location.href = "/signin";
@@ -174,17 +174,17 @@ export default function BrandsPage() {
           className="outline-btn"
           onClick={() => refetchBrands()}
         >
-          Refresh Workspaces
+          Refresh
         </button>
       }
       filters={
         <div className="filter-chip">
           <AppIcon name="folder" className="app-icon" />
-          Active workspaces: {brands.length}
+          Workspaces: {brands.length}
         </div>
       }
     >
-      <ErrorBoundary fallbackTitle="Workspace management encountered an error">
+      <ErrorBoundary fallbackTitle="Could not load workspaces">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Create Brand Card */}
           <div className="crm-panel p-6 rounded-2xl md:col-span-1 flex flex-col gap-4">
@@ -200,12 +200,12 @@ export default function BrandsPage() {
                   htmlFor={brandNameId}
                   className="text-xs font-semibold uppercase text-slate-500 mb-1 block"
                 >
-                  Brand / Client Name
+                  Brand or Workspace Name
                 </label>
                 <input
                   id={brandNameId}
                   type="text"
-                  placeholder="e.g. Acme Corporation"
+                  placeholder="e.g. Acme Studio"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg bg-white outline-none text-sm"
@@ -217,7 +217,7 @@ export default function BrandsPage() {
                   htmlFor={timezoneId}
                   className="text-xs font-semibold uppercase text-slate-500 mb-1 block"
                 >
-                  Workspace Timezone
+                  Timezone
                 </label>
                 <select
                   id={timezoneId}
@@ -252,7 +252,7 @@ export default function BrandsPage() {
                   <AppIcon name="grid" className="app-icon" />
                 </span>
                 <h2 className="text-base font-bold text-slate-900">
-                  Active Workspaces ({brands.length})
+                  Your Workspaces ({brands.length})
                 </h2>
               </div>
             </div>
@@ -261,9 +261,9 @@ export default function BrandsPage() {
               <TableSkeleton rows={3} cols={3} />
             ) : brands.length === 0 ? (
               <div className="text-center py-12 text-slate-500 text-sm">
-                <p className="font-semibold text-slate-700">No brand workspaces created yet.</p>
+                <p className="font-semibold text-slate-700">You haven't created any workspaces yet.</p>
                 <p className="text-xs mt-1">
-                  Create your first client workspace using the form on the left.
+                  Use the form on the left to set up your first brand workspace.
                 </p>
               </div>
             ) : (
@@ -289,8 +289,7 @@ export default function BrandsPage() {
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            Team Members: {brand.members?.length || 1} • Workspace ID:{" "}
-                            {bId.slice(0, 12)}...
+                            Team: {brand.members?.length || 1} member(s)
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -300,7 +299,7 @@ export default function BrandsPage() {
                             className="outline-btn text-xs px-3 py-1.5"
                             aria-label={`Edit workspace ${brand.name}`}
                           >
-                            Rename & Settings
+                            Edit
                           </button>
                           <button
                             type="button"
@@ -327,7 +326,7 @@ export default function BrandsPage() {
                       {isSelected && (
                         <div className="mt-4 pt-4 border-t border-slate-200">
                           <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                            Team Roles & Permissions (RBAC)
+                            Team Members & Roles
                           </h4>
                           <form onSubmit={handleAddMember} className="flex gap-2 mb-3 flex-wrap">
                             <div className="flex-1 min-w-[200px]">
@@ -348,9 +347,9 @@ export default function BrandsPage() {
                                 onChange={(e) => setMemberRole(e.target.value as any)}
                                 className="px-2 py-1.5 text-xs border rounded-lg bg-white"
                               >
-                                <option value="admin">Admin (Full Control)</option>
-                                <option value="member">Member (Creator)</option>
-                                <option value="client">Client (Approver)</option>
+                                <option value="admin">Admin (Full access)</option>
+                                <option value="member">Editor (Can create posts)</option>
+                                <option value="client">Reviewer (Can approve posts)</option>
                               </select>
                             </div>
                             <button
@@ -358,7 +357,7 @@ export default function BrandsPage() {
                               disabled={addingMember || !memberEmail.trim()}
                               className="primary-btn text-xs px-3 py-1.5 rounded-lg"
                             >
-                              {addingMember ? "Adding..." : "+ Invite Member"}
+                              {addingMember ? "Inviting..." : "+ Invite Member"}
                             </button>
                           </form>
 
@@ -403,8 +402,8 @@ export default function BrandsPage() {
       <Modal
         isOpen={Boolean(editingBrand)}
         onClose={() => setEditingBrand(null)}
-        title="Edit Brand Workspace"
-        description="Update the workspace display name and primary timezone."
+        title="Edit Workspace"
+        description="Change the workspace name or timezone."
         confirmLabel="Save Changes"
         onConfirm={handleUpdateBrand}
         isLoading={savingEdit}
@@ -447,7 +446,7 @@ export default function BrandsPage() {
         isOpen={Boolean(brandToDelete)}
         onClose={() => setBrandToDelete(null)}
         title="Delete Workspace?"
-        description={`Are you sure you want to delete "${brandToDelete?.name}"? All associated posts and permissions will be permanently removed.`}
+        description={`Are you sure you want to delete "${brandToDelete?.name}"? All posts and team access within this workspace will be removed.`}
         confirmLabel="Delete Workspace"
         isDestructive
         onConfirm={confirmDeleteBrand}

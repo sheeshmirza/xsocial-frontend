@@ -249,7 +249,7 @@ export default function AccountsPage() {
         </>
       }
     >
-      <ErrorBoundary fallbackTitle="Accounts overview encountered an issue">
+      <ErrorBoundary fallbackTitle="Could not load accounts">
         <section className="crm-grid crm-grid-accounts">
           <header className="workspace-head">
             <h2 className="section-title">
@@ -259,20 +259,20 @@ export default function AccountsPage() {
               Connected Accounts
             </h2>
             <p>
-              Connect Instagram and LinkedIn profiles to publish directly from your workspace. You
+              Connect Instagram and LinkedIn accounts to publish directly from XSocial. You
               can refresh access or disconnect an account at any time.
             </p>
             <div className="workspace-kpis">
               <article className="kpi-card">
-                <p className="kpi-label">Profiles Connected</p>
+                <p className="kpi-label">Connected Accounts</p>
                 <p className="kpi-value">{connectedAccounts.length}</p>
               </article>
               <article className="kpi-card">
-                <p className="kpi-label">Platforms Active</p>
+                <p className="kpi-label">Platforms</p>
                 <p className="kpi-value">{connectedPlatformsCount}</p>
               </article>
               <article className="kpi-card">
-                <p className="kpi-label">Awaiting Setup</p>
+                <p className="kpi-label">Available to Connect</p>
                 <p className="kpi-value">{unconnectedPlatformsCount}</p>
               </article>
             </div>
@@ -283,13 +283,13 @@ export default function AccountsPage() {
               <span className="icon-token" aria-hidden="true">
                 <AppIcon name="shield" className="app-icon" />
               </span>
-              OAuth Security & RBAC
+              Privacy & Security
             </h3>
             <ul className="text-xs text-slate-600 flex flex-col gap-2 mt-3 pl-4 list-disc">
-              <li>Connect accounts securely through standard OAuth 2.0 PKCE handshakes.</li>
-              <li>Tokens are isolated per workspace to enforce team boundary privacy.</li>
-              <li>Refresh access when a platform bearer token reaches expiration.</li>
-              <li>Disconnect accounts immediately when revoking social access.</li>
+              <li>Connect directly using official sign-in from Instagram and LinkedIn.</li>
+              <li>Your social passwords are never seen or stored by XSocial.</li>
+              <li>Refresh your connection anytime if a social platform requests re-confirmation.</li>
+              <li>Disconnect any account immediately whenever you choose.</li>
             </ul>
           </section>
 
@@ -312,7 +312,7 @@ export default function AccountsPage() {
                     {items.length ? (
                       <>
                         <p className="platform-status connected">
-                          Live Connected ({items.length})
+                          Connected ({items.length})
                         </p>
                         <div className="account-list">
                           {items.map((account) => {
@@ -328,7 +328,7 @@ export default function AccountsPage() {
                                     onClick={() => handleRefreshToken(account._id)}
                                     disabled={busyAccountId === account._id}
                                   >
-                                    {busyAccountId === account._id ? "Refreshing..." : "Refresh Token"}
+                                    {busyAccountId === account._id ? "Refreshing..." : "Refresh Connection"}
                                   </button>
                                   <button
                                     type="button"
@@ -347,14 +347,14 @@ export default function AccountsPage() {
                     ) : (
                       <>
                         <p className="platform-status disconnected">
-                          Awaiting authorization
+                          Not connected
                         </p>
                         <button
                           className="connect-btn mt-3"
                           disabled={connecting === platform}
                           onClick={() => handleConnect(platform)}
                         >
-                          {connecting === platform ? "Redirecting..." : `Authorize ${label}`}
+                          {connecting === platform ? "Opening sign-in..." : `Connect ${label}`}
                         </button>
                       </>
                     )}
@@ -370,8 +370,8 @@ export default function AccountsPage() {
       <Modal
         isOpen={Boolean(accountToDisconnect)}
         onClose={() => setAccountToDisconnect(null)}
-        title="Disconnect Social Account?"
-        description={`Are you sure you want to disconnect this ${accountToDisconnect?.platform} account? Scheduled posts targeting this handle will fail until reconnected.`}
+        title="Disconnect Account?"
+        description={`Are you sure you want to disconnect this ${accountToDisconnect?.platform} account? Any scheduled posts for this account will be paused until you reconnect.`}
         confirmLabel="Disconnect Account"
         isDestructive
         onConfirm={confirmDisconnect}
