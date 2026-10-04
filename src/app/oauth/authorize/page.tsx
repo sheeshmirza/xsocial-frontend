@@ -177,19 +177,18 @@ export default function MCPAuthorizePage() {
             <span className="icon-token" aria-hidden="true">
               <AppIcon name="bot" className="app-icon" />
             </span>
-            <p className="subtitle-inline">OAuth Handshake</p>
+            <p className="subtitle-inline">ChatGPT Integration</p>
           </div>
           <h1 id="chatgpt-auth-title">Start from ChatGPT</h1>
           <p className="subtitle">
-            This page is the XSocial authorization screen used after ChatGPT
-            starts an OAuth connection. Opening this URL directly does not
-            create an active OAuth transaction.
+            This page is used to connect your XSocial account with ChatGPT. Please start
+            from ChatGPT to link your accounts.
           </p>
           <a
             href={CHATGPT_XSOCIAL_URL}
             className="solid-link inline-flex items-center justify-center w-full min-h-[44px] mt-4 no-underline text-sm font-semibold"
           >
-            Return to XSocial in ChatGPT
+            Return to ChatGPT
           </a>
         </section>
       </main>
@@ -205,12 +204,11 @@ export default function MCPAuthorizePage() {
             <span className="icon-token" aria-hidden="true">
               <AppIcon name="shield" className="app-icon" />
             </span>
-            <p className="subtitle-inline">Connect to ChatGPT</p>
+            <p className="subtitle-inline">Connect with ChatGPT</p>
           </div>
           <h1 id="signin-auth-title">Sign in to XSocial</h1>
           <p className="subtitle">
-            Use your XSocial account to authorize ChatGPT to access your
-            connected social media workspace.
+            Sign in to allow ChatGPT to help you draft, schedule, and publish posts to your social accounts.
           </p>
 
           <form onSubmit={handleLogin} className="auth-form">
@@ -258,11 +256,11 @@ export default function MCPAuthorizePage() {
           <span className="icon-token" aria-hidden="true">
             <AppIcon name="check" className="app-icon" />
           </span>
-          <p className="subtitle-inline">Authorize ChatGPT</p>
+          <p className="subtitle-inline">Connect with ChatGPT</p>
         </div>
         <h1 id="allow-auth-title">Allow access?</h1>
         <p className="subtitle">
-          ChatGPT is requesting access to the XSocial account below.
+          ChatGPT is requesting permission to access your XSocial account.
         </p>
 
         <div className="message mb-4 bg-slate-50 border border-slate-200 text-slate-800">
@@ -272,10 +270,10 @@ export default function MCPAuthorizePage() {
         </div>
 
         <div className="message mb-4 bg-slate-50 border border-slate-200 text-slate-800">
-          <strong>Requested permissions</strong>
+          <strong>What ChatGPT can do</strong>
           <br />
           <span className="text-xs text-slate-600">
-            Manage brands, scheduled posts, social accounts, and publishing.
+            Create, schedule, and view posts on your connected social accounts.
           </span>
         </div>
 
@@ -286,7 +284,7 @@ export default function MCPAuthorizePage() {
             disabled={decisionLoading}
             className="primary-btn w-full py-2.5"
           >
-            {decisionLoading ? "Connecting..." : "Allow access"}
+            {decisionLoading ? "Connecting..." : "Allow Access"}
           </button>
           <button
             type="button"
@@ -294,7 +292,7 @@ export default function MCPAuthorizePage() {
             disabled={decisionLoading}
             className="outline-btn w-full py-2.5"
           >
-            Deny
+            Cancel
           </button>
         </div>
 
