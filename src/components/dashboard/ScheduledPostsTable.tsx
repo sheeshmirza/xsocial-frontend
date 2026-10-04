@@ -86,7 +86,7 @@ export default function ScheduledPostsTable({
 
   async function handleSaveEdit() {
     if (!editingPost || !editDate || !editTime) {
-      toast.error("Please specify both scheduled date and time.");
+      toast.error("Please pick both a date and a time.");
       return;
     }
 
@@ -109,11 +109,11 @@ export default function ScheduledPostsTable({
         }),
       });
 
-      toast.success("Scheduled job updated successfully!");
+      toast.success("Scheduled post updated successfully!");
       setEditingPost(null);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update scheduled job.");
+      toast.error(error instanceof Error ? error.message : "Could not update scheduled post.");
     } finally {
       setSavingEdit(false);
     }
@@ -124,14 +124,14 @@ export default function ScheduledPostsTable({
     try {
       if (post.recurrencePaused) {
         await authJsonFetch(api.posts.resumeRecurrence(post._id), { method: "POST" });
-        toast.success("Recurrence resumed for this post.");
+        toast.success("Repeating schedule resumed.");
       } else {
         await authJsonFetch(api.posts.pauseRecurrence(post._id), { method: "POST" });
-        toast.success("Recurrence paused for this post.");
+        toast.success("Repeating schedule paused.");
       }
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to toggle recurrence.");
+      toast.error(error instanceof Error ? error.message : "Could not update repeating schedule.");
     } finally {
       setTogglingRecurrenceId(null);
     }
@@ -147,7 +147,7 @@ export default function ScheduledPostsTable({
       setPostToDelete(null);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete scheduled post.");
+      toast.error(error instanceof Error ? error.message : "Could not delete scheduled post.");
     } finally {
       setDeletingId(null);
     }
@@ -161,11 +161,11 @@ export default function ScheduledPostsTable({
         method: "DELETE",
         body: JSON.stringify({ ids: selectedIds }),
       });
-      toast.success(`${selectedIds.length} scheduled posts removed.`);
+      toast.success(`${selectedIds.length} scheduled posts deleted.`);
       setSelectedIds([]);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Bulk delete failed.");
+      toast.error(error instanceof Error ? error.message : "Could not delete selected posts.");
     } finally {
       setBulkProcessing(false);
     }
@@ -185,7 +185,7 @@ export default function ScheduledPostsTable({
       toast.success(`${result?.data?.pausedCount ?? selectedIds.length} recurring posts paused.`);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Bulk pause failed.");
+      toast.error(error instanceof Error ? error.message : "Could not pause repeating posts.");
     } finally {
       setBulkProcessing(false);
     }
@@ -205,7 +205,7 @@ export default function ScheduledPostsTable({
       toast.success(`${result?.data?.resumedCount ?? selectedIds.length} recurring posts resumed.`);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Bulk resume failed.");
+      toast.error(error instanceof Error ? error.message : "Could not resume repeating posts.");
     } finally {
       setBulkProcessing(false);
     }
@@ -218,14 +218,14 @@ export default function ScheduledPostsTable({
           <span className="icon-token" aria-hidden="true">
             <AppIcon name="calendar" className="app-icon" />
           </span>
-          Scheduled Posts Queue ({posts.length})
+          Scheduled Posts ({posts.length})
         </h3>
       </div>
 
       {loading ? (
         <TableSkeleton rows={4} cols={5} />
       ) : posts.length === 0 ? (
-        <p className="composer-empty">No scheduled posts currently in queue.</p>
+        <p className="composer-empty">You don't have any scheduled posts yet.</p>
       ) : (
         <>
           {selectedIds.length > 0 && (
@@ -245,7 +245,7 @@ export default function ScheduledPostsTable({
                 onClick={handleBulkPause}
                 disabled={bulkProcessing}
               >
-                Pause Recurrence
+                Pause Repeating
               </button>
               <button
                 type="button"
@@ -253,7 +253,7 @@ export default function ScheduledPostsTable({
                 onClick={handleBulkResume}
                 disabled={bulkProcessing}
               >
-                Resume Recurrence
+                Resume Repeating
               </button>
               <button
                 type="button"
@@ -277,10 +277,10 @@ export default function ScheduledPostsTable({
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th scope="col">Title & Caption</th>
-                  <th scope="col">Execution Time</th>
-                  <th scope="col">Recurrence</th>
-                  <th scope="col">Platforms</th>
+                  <th scope="col">Title & Message</th>
+                  <th scope="col">Scheduled Time</th>
+                  <th scope="col">Repeat</th>
+                  <th scope="col">Channels</th>
                   <th scope="col" className="text-right">
                     Actions
                   </th>

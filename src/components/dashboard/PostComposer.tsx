@@ -323,7 +323,7 @@ export default function PostComposer({
       if (isApprovalRequest) {
         // Complete Backend Mapping: Call submitApproval
         await authJsonFetch(api.posts.submitApproval(createdPostId), { method: "POST" });
-        toast.success("Post submitted to client review and approval queue!");
+        toast.success("Post sent for review and approval!");
       } else if (enableSchedule) {
         await authJsonFetch(api.posts.schedule(createdPostId), {
           method: "POST",
@@ -336,7 +336,7 @@ export default function PostComposer({
             recurrenceUnit: enableRecurrence ? recurrenceUnit : undefined,
           }),
         });
-        toast.success("Post scheduled for delivery!");
+        toast.success("Post scheduled successfully!");
       } else {
         await authJsonFetch(api.posts.publish(createdPostId), {
           method: "POST",
@@ -379,15 +379,15 @@ export default function PostComposer({
           <span className="icon-token" aria-hidden="true">
             <AppIcon name="publish" className="app-icon" />
           </span>
-          Create & Schedule Content
+          Create a New Post
         </h3>
       </div>
 
       {!accounts.length ? (
         <p className="composer-empty">
-          Connect a social handle first in{" "}
+          Connect an account first in{" "}
           <Link href="/accounts" className="link-inline">
-            Social Accounts
+            Connected Accounts
           </Link>
           .
         </p>
@@ -395,32 +395,32 @@ export default function PostComposer({
 
       <div className="flex flex-col gap-3">
         <label className="composer-label">
-          Campaign Title (optional)
+          Post Title (optional)
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Q4 Product Announcement"
+            placeholder="e.g. Autumn Product Launch"
             maxLength={140}
             disabled={!accounts.length}
           />
         </label>
 
         <label className="composer-label">
-          Content Format
+          Post Type
           <select
             value={selectedPostType}
             onChange={(e) => setSelectedPostType(e.target.value)}
             disabled={!accounts.length}
           >
-            <option value="auto">Auto-detect (Text / Image / Media)</option>
-            <option value="text">Status Update (Pure Text)</option>
-            <option value="image">Single Image Post</option>
-            <option value="carousel">Multi-Image Carousel</option>
-            <option value="reel">Reel / Video (Instagram & LinkedIn)</option>
-            <option value="story">Instagram Story</option>
-            <option value="article">Article / Link Preview</option>
-            <option value="poll">Native LinkedIn Poll</option>
+            <option value="auto">Automatic (based on text or photos)</option>
+            <option value="text">Text Only</option>
+            <option value="image">Single Photo</option>
+            <option value="carousel">Photo Carousel</option>
+            <option value="reel">Video / Reel</option>
+            <option value="story">Story (Instagram)</option>
+            <option value="article">Article Link</option>
+            <option value="poll">Poll (LinkedIn)</option>
           </select>
         </label>
 
@@ -428,7 +428,7 @@ export default function PostComposer({
           <div className="border border-sky-200 bg-sky-50/40 rounded-xl p-3.5 flex flex-col gap-3 my-2">
             <div className="flex items-center gap-2 text-sky-900 font-bold text-xs uppercase tracking-wider">
               <AppIcon name="spark" className="w-4 h-4 text-sky-700" />
-              LinkedIn Poll Settings
+              Poll Details
             </div>
             <label className="composer-label text-xs">
               Question
@@ -483,14 +483,14 @@ export default function PostComposer({
         )}
 
         <label className="composer-label">
-          Caption Content
+          Post Message
           <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             placeholder={
               enableAiGeneration
-                ? "Optional manual text or guidelines"
-                : "Draft your post copy here..."
+                ? "Optional notes or points you want to include..."
+                : "What would you like to share?"
             }
             rows={5}
             maxLength={3000}
@@ -499,10 +499,10 @@ export default function PostComposer({
         </label>
 
         <label className="composer-label">
-          First Comment (Automated sequencing)
+          First Comment (optional)
           <input
             type="text"
-            placeholder="e.g. Find the resource link in our bio! 👇"
+            placeholder="e.g. Link in bio! 👇"
             value={firstComment}
             onChange={(e) => setFirstComment(e.target.value)}
             disabled={!accounts.length}
@@ -512,11 +512,11 @@ export default function PostComposer({
         {/* Media Attachments */}
         <section className="composer-section">
           <div className="composer-section-head">
-            <h4>Media Attachments</h4>
-            <p>Required for Instagram publishing. Supports images, videos, and GIFs up to 50MB.</p>
+            <h4>Photos & Videos</h4>
+            <p>Required for Instagram. Supports pictures, videos, and GIFs up to 50MB.</p>
           </div>
           <label className="composer-label">
-            Choose media files
+            Upload photos or videos
             <input
               className="composer-file-input"
               type="file"
@@ -558,30 +558,30 @@ export default function PostComposer({
             onChange={(e) => setEnableAiGeneration(e.target.checked)}
             disabled={!accounts.length}
           />
-          Generate Content with AI Assist
+          Help me write with AI
         </label>
 
         {enableAiGeneration ? (
           <div className="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/30 flex flex-col gap-3 my-2">
             <label className="composer-label text-xs">
-              AI Generation Target
+              What should AI create?
               <select
                 value={aiGenerationType}
                 onChange={(e) => setAiGenerationType(e.target.value as AiGenerationType)}
               >
-                <option value="text">Text Copy only</option>
+                <option value="text">Post message only</option>
                 <option value="image">Image only</option>
-                <option value="both">Both Text & Image</option>
+                <option value="both">Both message & image</option>
               </select>
             </label>
 
             {(aiGenerationType === "text" || aiGenerationType === "both") && (
               <label className="composer-label text-xs">
-                Copy Prompt
+                What is this post about?
                 <textarea
                   value={aiTextPrompt}
                   onChange={(e) => setAiTextPrompt(e.target.value)}
-                  placeholder="Describe topic, tone (e.g. professional, exciting), and call to action..."
+                  placeholder="Describe your idea, tone (friendly, professional, enthusiastic), and what you want to say..."
                   rows={2}
                 />
               </label>
@@ -589,11 +589,11 @@ export default function PostComposer({
 
             {(aiGenerationType === "image" || aiGenerationType === "both") && (
               <label className="composer-label text-xs">
-                Visual Art Prompt
+                Describe the picture you want
                 <textarea
                   value={aiImagePrompt}
                   onChange={(e) => setAiImagePrompt(e.target.value)}
-                  placeholder="Describe composition, lighting, and visual elements..."
+                  placeholder="Describe what the picture should show..."
                   rows={2}
                 />
               </label>
@@ -604,8 +604,8 @@ export default function PostComposer({
         {/* Destinations */}
         <section className="composer-section">
           <div className="composer-section-head">
-            <h4>Target Channels</h4>
-            <p>Select profiles to publish simultaneously.</p>
+            <h4>Where to Share</h4>
+            <p>Choose which accounts to post to.</p>
           </div>
           <div className="composer-accounts">
             {accounts.map((account) => (
@@ -616,7 +616,7 @@ export default function PostComposer({
                 onClick={() => toggleAccount(account._id)}
               >
                 {platformLabelByName[account.platform] || account.platform}:{" "}
-                {account.platformDisplayName || account.platformUsername || "Handle"}
+                {account.platformDisplayName || account.platformUsername || "Account"}
               </button>
             ))}
           </div>
@@ -625,8 +625,8 @@ export default function PostComposer({
         {/* Delivery Options */}
         <section className="composer-section">
           <div className="composer-section-head">
-            <h4>Delivery & Scheduling</h4>
-            <p>Publish immediately or schedule future executions with recurrence.</p>
+            <h4>Publishing Options</h4>
+            <p>Post right away or pick a time in the future.</p>
           </div>
           <div className="composer-toggle-row">
             <label className="composer-toggle">
@@ -652,7 +652,7 @@ export default function PostComposer({
           {enableSchedule && (
             <div className="schedule-grid mt-3">
               <label className="composer-label text-xs">
-                Publish Date
+                Date
                 <input
                   type="date"
                   value={scheduleDate}
@@ -660,7 +660,7 @@ export default function PostComposer({
                 />
               </label>
               <label className="composer-label text-xs">
-                Publish Time
+                Time
                 <input
                   type="time"
                   value={scheduleTime}
@@ -687,7 +687,7 @@ export default function PostComposer({
                 />
               </label>
               <label className="composer-label text-xs">
-                Cycle Unit
+                Frequency
                 <select
                   value={recurrenceUnit}
                   onChange={(e) => setRecurrenceUnit(e.target.value as RecurrenceUnit)}
@@ -712,9 +712,9 @@ export default function PostComposer({
             disabled={submitting || uploadingMedia || !accounts.length}
           >
             {uploadingMedia
-              ? "Uploading media..."
+              ? "Uploading photos/videos..."
               : submitting
-                ? "Processing..."
+                ? "Please wait..."
                 : enableSchedule
                   ? "Schedule Post"
                   : "Publish Now"}
@@ -725,9 +725,9 @@ export default function PostComposer({
             className="outline-btn text-xs font-semibold py-2.5 px-4"
             onClick={() => handleCreate(true)}
             disabled={submittingForApproval || uploadingMedia || !accounts.length}
-            title="Submit this draft to the client approval workflow"
+            title="Send this post to your team for approval"
           >
-            {submittingForApproval ? "Submitting..." : "Submit for Approval"}
+            {submittingForApproval ? "Sending..." : "Send for Approval"}
           </button>
         </div>
       </div>
