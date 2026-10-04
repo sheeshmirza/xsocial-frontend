@@ -76,9 +76,9 @@ export default function DashboardPage() {
     data: posts = [],
     isLoading: postsLoading,
     refetch: refetchPosts,
-  } = useQuery({
+  } = useQuery<PostItem[]>({
     queryKey: ["posts", accountFilterIds],
-    queryFn: async () => {
+    queryFn: async (): Promise<PostItem[]> => {
       try {
         const params = new URLSearchParams();
         params.append("limit", "100");
@@ -126,14 +126,14 @@ export default function DashboardPage() {
 
   // Filtered views
   const scheduledPosts = useMemo(
-    () => posts.filter((p) => p.status === "scheduled" && p.reviewStatus !== "pending"),
+    () => posts.filter((p: PostItem) => p.status === "scheduled" && p.reviewStatus !== "pending"),
     [posts],
   );
 
   const publishedPosts = useMemo(
     () =>
       posts.filter(
-        (p) =>
+        (p: PostItem) =>
           p.status === "published" ||
           (Array.isArray(p.platformResponses) &&
             p.platformResponses.some((r) => r.status === "success")),
@@ -142,14 +142,14 @@ export default function DashboardPage() {
   );
 
   const pendingApprovalPosts = useMemo(
-    () => posts.filter((p) => p.reviewStatus === "pending"),
+    () => posts.filter((p: PostItem) => p.reviewStatus === "pending"),
     [posts],
   );
 
   const metrics = useMemo(
     () => ({
       connectedCount: accounts.length,
-      drafts: posts.filter((p) => p.status === "draft").length,
+      drafts: posts.filter((p: PostItem) => p.status === "draft").length,
       scheduled: scheduledPosts.length,
       published: publishedPosts.length,
     }),
