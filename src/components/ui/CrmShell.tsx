@@ -20,7 +20,8 @@ type NavItem = {
     | "rocket"
     | "target"
     | "trend"
-    | "chart";
+    | "chart"
+    | "calendar";
 };
 
 type NavGroup = {
@@ -43,6 +44,8 @@ const navGroups: NavGroup[] = [
     title: "Main Menu",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: "home" },
+      { label: "Scheduled Posts", href: "/scheduled", icon: "calendar" },
+      { label: "Published Posts", href: "/published", icon: "publish" },
       { label: "Connected Accounts", href: "/accounts", icon: "users" },
       { label: "Brands & Workspaces", href: "/brands", icon: "folder" },
     ],
