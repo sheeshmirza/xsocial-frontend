@@ -17,6 +17,9 @@ export const API_CONFIG = {
     USER_ME: "/v1/users/me",
     CHANGE_PASSWORD: "/v1/users/change-password",
 
+    // OAuth Handshake & MCP Authorize
+    OAUTH_AUTHORIZE: "/oauth/authorize",
+
     // Brands & Multi-workspace RBAC
     BRANDS: "/v1/brands",
 
@@ -60,6 +63,9 @@ export const api = {
     verifyEmail: () => getApiUrl(API_CONFIG.ENDPOINTS.VERIFY_EMAIL),
     forgotPassword: () => getApiUrl(API_CONFIG.ENDPOINTS.FORGOT_PASSWORD),
     resetPassword: () => getApiUrl(API_CONFIG.ENDPOINTS.RESET_PASSWORD),
+  },
+  oauth: {
+    authorize: () => getApiUrl(API_CONFIG.ENDPOINTS.OAUTH_AUTHORIZE),
   },
   users: {
     me: () => getApiUrl(API_CONFIG.ENDPOINTS.USER_ME),

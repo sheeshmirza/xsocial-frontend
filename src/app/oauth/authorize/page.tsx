@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { getApiUrl, api } from "@/src/config/api";
+import { FormEvent, useEffect, useId, useMemo, useState } from "react";
+import { api } from "@/src/config/api";
+import AppIcon from "@/src/components/ui/AppIcon";
 
 type Profile = {
   id?: string;
@@ -12,7 +13,26 @@ type Profile = {
 const CHATGPT_XSOCIAL_URL =
   "https://chatgpt.com/plugins/plugins_6abe9a135fb08191b06ab57d40f44e2e";
 
+/**
+ * Validates that redirect URI has a safe scheme and valid structure.
+ */
+function isSafeRedirectUri(uri: string): boolean {
+  try {
+    const parsed = new URL(uri);
+    return (
+      parsed.protocol === "https:" ||
+      (parsed.protocol === "http:" &&
+        (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default function MCPAuthorizePage() {
+  const emailId = useId();
+  const passwordId = useId();
+
   const [transaction, setTransaction] = useState("");
   const [oauthAccessToken, setOAuthAccessToken] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -23,8 +43,10 @@ export default function MCPAuthorizePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setTransaction(params.get("transaction") || "");
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setTransaction(params.get("transaction") || "");
+    }
   }, []);
 
   const hasTransaction = useMemo(() => Boolean(transaction), [transaction]);
@@ -72,7 +94,7 @@ export default function MCPAuthorizePage() {
         payload?.accessToken;
 
       if (!accessToken) {
-        throw new Error("xSocial did not return a valid access token.");
+        throw new Error("XSocial did not return a valid access token.");
       }
 
       setOAuthAccessToken(accessToken);
@@ -117,7 +139,7 @@ export default function MCPAuthorizePage() {
       });
 
       const payload = await parseResponse(
-        await fetch(getApiUrl("/oauth/authorize"), {
+        await fetch(api.oauth.authorize(), {
           method: "POST",
           headers,
           body,
@@ -127,7 +149,12 @@ export default function MCPAuthorizePage() {
       setOAuthAccessToken("");
 
       if (!payload?.redirect_uri) {
-        throw new Error("xSocial did not return the OAuth redirect.");
+        throw new Error("XSocial did not return the OAuth redirect URL.");
+      }
+
+      // Security: Validate redirect_uri to prevent Open Redirect attacks
+      if (!isSafeRedirectUri(payload.redirect_uri)) {
+        throw new Error("Invalid redirect URI received from authorization server.");
       }
 
       window.location.assign(payload.redirect_uri);
@@ -144,27 +171,25 @@ export default function MCPAuthorizePage() {
   if (!hasTransaction) {
     return (
       <main className="auth-shell" id="main-content">
-        <section className="auth-card">
+        <section className="auth-card text-center" aria-labelledby="chatgpt-auth-title">
           <p className="eyebrow">XSocial</p>
-          <h1>Start from ChatGPT</h1>
+          <div className="card-title-row justify-center">
+            <span className="icon-token" aria-hidden="true">
+              <AppIcon name="bot" className="app-icon" />
+            </span>
+            <p className="subtitle-inline">OAuth Handshake</p>
+          </div>
+          <h1 id="chatgpt-auth-title">Start from ChatGPT</h1>
           <p className="subtitle">
-            This page is the xSocial authorization screen used after ChatGPT
+            This page is the XSocial authorization screen used after ChatGPT
             starts an OAuth connection. Opening this URL directly does not
-            create an OAuth session.
+            create an active OAuth transaction.
           </p>
           <a
             href={CHATGPT_XSOCIAL_URL}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "100%",
-              minHeight: 44,
-              marginTop: 16,
-              textDecoration: "none",
-            }}
+            className="solid-link inline-flex items-center justify-center w-full min-h-[44px] mt-4 no-underline text-sm font-semibold"
           >
-            Return to xSocial in ChatGPT
+            Return to XSocial in ChatGPT
           </a>
         </section>
       </main>
@@ -174,24 +199,25 @@ export default function MCPAuthorizePage() {
   if (!profile) {
     return (
       <main className="auth-shell" id="main-content">
-        <section className="auth-card">
+        <section className="auth-card" aria-labelledby="signin-auth-title">
           <p className="eyebrow">XSocial</p>
           <div className="card-title-row">
             <span className="icon-token" aria-hidden="true">
-              🔐
+              <AppIcon name="shield" className="app-icon" />
             </span>
             <p className="subtitle-inline">Connect to ChatGPT</p>
           </div>
-          <h1>Sign in to xSocial</h1>
+          <h1 id="signin-auth-title">Sign in to XSocial</h1>
           <p className="subtitle">
-            Use your xSocial account to authorize ChatGPT to access your
+            Use your XSocial account to authorize ChatGPT to access your
             connected social media workspace.
           </p>
 
           <form onSubmit={handleLogin} className="auth-form">
-            <label>
-              Email
+            <div>
+              <label htmlFor={emailId}>Email address</label>
               <input
+                id={emailId}
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -199,10 +225,11 @@ export default function MCPAuthorizePage() {
                 placeholder="you@example.com"
                 required
               />
-            </label>
-            <label>
-              Password
+            </div>
+            <div>
+              <label htmlFor={passwordId}>Password</label>
               <input
+                id={passwordId}
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -211,13 +238,13 @@ export default function MCPAuthorizePage() {
                 minLength={8}
                 required
               />
-            </label>
-            <button type="submit" disabled={loading}>
+            </div>
+            <button type="submit" disabled={loading} className="primary-btn">
               {loading ? "Signing in..." : "Continue"}
             </button>
           </form>
 
-          {error && <p className="message error">{error}</p>}
+          {error && <p className="message error" role="alert">{error}</p>}
         </section>
       </main>
     );
@@ -225,48 +252,53 @@ export default function MCPAuthorizePage() {
 
   return (
     <main className="auth-shell" id="main-content">
-      <section className="auth-card">
+      <section className="auth-card" aria-labelledby="allow-auth-title">
         <p className="eyebrow">XSocial</p>
         <div className="card-title-row">
           <span className="icon-token" aria-hidden="true">
-            ✓
+            <AppIcon name="check" className="app-icon" />
           </span>
           <p className="subtitle-inline">Authorize ChatGPT</p>
         </div>
-        <h1>Allow access?</h1>
+        <h1 id="allow-auth-title">Allow access?</h1>
         <p className="subtitle">
-          ChatGPT is requesting access to the xSocial account below.
+          ChatGPT is requesting access to the XSocial account below.
         </p>
 
-        <div className="message" style={{ marginBottom: 16 }}>
-          <strong>{profile.name || "Your xSocial account"}</strong>
+        <div className="message mb-4 bg-slate-50 border border-slate-200 text-slate-800">
+          <strong>{profile.name || "Your XSocial account"}</strong>
           <br />
-          {profile.email}
+          <span className="text-xs text-slate-600">{profile.email}</span>
         </div>
 
-        <div className="message" style={{ marginBottom: 16 }}>
-          <strong>Requested access</strong>
+        <div className="message mb-4 bg-slate-50 border border-slate-200 text-slate-800">
+          <strong>Requested permissions</strong>
           <br />
-          Manage brands, scheduled posts, social accounts, and publishing.
+          <span className="text-xs text-slate-600">
+            Manage brands, scheduled posts, social accounts, and publishing.
+          </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => decide("allow")}
-          disabled={decisionLoading}
-        >
-          {decisionLoading ? "Connecting..." : "Allow access"}
-        </button>
-        <button
-          type="button"
-          onClick={() => decide("deny")}
-          disabled={decisionLoading}
-          style={{ marginTop: 10 }}
-        >
-          Deny
-        </button>
+        <div className="flex flex-col gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => decide("allow")}
+            disabled={decisionLoading}
+            className="primary-btn w-full py-2.5"
+          >
+            {decisionLoading ? "Connecting..." : "Allow access"}
+          </button>
+          <button
+            type="button"
+            onClick={() => decide("deny")}
+            disabled={decisionLoading}
+            className="outline-btn w-full py-2.5"
+          >
+            Deny
+          </button>
+        </div>
 
-        {error && <p className="message error">{error}</p>}
+        {error && <p className="message error mt-3" role="alert">{error}</p>}
       </section>
     </main>
   );

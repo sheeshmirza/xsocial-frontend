@@ -9,21 +9,14 @@ import {
 } from "@/src/config/api";
 import AppIcon from "@/src/components/ui/AppIcon";
 import CrmShell from "@/src/components/ui/CrmShell";
+import Modal from "@/src/components/ui/Modal";
+import { CardSkeleton } from "@/src/components/ui/Skeleton";
+import { useToast } from "@/src/components/ui/ToastContext";
+import ErrorBoundary from "@/src/components/ui/ErrorBoundary";
 import { authJsonFetch, clearSession, logoutSession } from "@/src/lib/session";
+import type { SocialAccount } from "@/src/lib/schemas";
 
 type Platform = SupportedSocialPlatform;
-
-type SocialAccount = {
-  _id: string;
-  id?: string;
-  platform: Platform;
-  platformId?: string;
-  platformDisplayName?: string;
-  platformUsername?: string;
-  platformMetadata?: {
-    accountType?: string;
-  };
-};
 
 type SocialAccountsResponse = {
   data?: SocialAccount[];
@@ -58,14 +51,13 @@ const normalizeSocialAccount = (account: SocialAccount): SocialAccount => {
 };
 
 export default function AccountsPage() {
+  const toast = useToast();
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<Platform | null>(null);
   const [busyAccountId, setBusyAccountId] = useState<string | null>(null);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const [accountToDisconnect, setAccountToDisconnect] = useState<SocialAccount | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const redirectToSignIn = () => {
     clearSession();
@@ -83,21 +75,16 @@ export default function AccountsPage() {
     return platformCards.map(({ platform, label }) => ({
       platform,
       label,
-      items: connectedAccounts.filter(
-        (account) => account.platform === platform,
-      ),
+      items: connectedAccounts.filter((account) => account.platform === platform),
     }));
   }, [connectedAccounts]);
 
-  const unconnectedPlatformsCount =
-    platformCards.length - connectedPlatformsCount;
+  const unconnectedPlatformsCount = platformCards.length - connectedPlatformsCount;
 
   const formatAccountLabel = (account: SocialAccount) => {
     const accountType = account.platformMetadata?.accountType || "personal";
     const kindLabel =
-      accountType === "organization" || accountType === "page"
-        ? "Page"
-        : "Profile";
+      accountType === "organization" || accountType === "page" ? "Page" : "Profile";
     const primary =
       account.platformDisplayName ||
       account.platformUsername ||
@@ -109,12 +96,9 @@ export default function AccountsPage() {
   async function loadAccounts(signal?: AbortSignal) {
     try {
       setLoading(true);
-      const payload = await authJsonFetch<SocialAccountsResponse>(
-        api.social.accounts(),
-        {
-          signal,
-        },
-      );
+      const payload = await authJsonFetch<SocialAccountsResponse>(api.social.accounts(), {
+        signal,
+      });
       const items = Array.isArray(payload?.data) ? payload.data : [];
       setAccounts(
         items.map(normalizeSocialAccount).filter((account): account is SocialAccount =>
@@ -126,17 +110,12 @@ export default function AccountsPage() {
         return;
       }
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Unable to load social accounts";
+        error instanceof Error ? error.message : "Unable to load social accounts.";
       if (errorMessage.toLowerCase().includes("session expired")) {
         redirectToSignIn();
         return;
       }
-      setMessage({
-        type: "error",
-        text: errorMessage,
-      });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -145,12 +124,9 @@ export default function AccountsPage() {
   async function handleConnect(platform: SupportedSocialPlatform) {
     try {
       setConnecting(platform);
-      const payload = await authJsonFetch<ConnectResponse>(
-        api.social.connect(platform),
-        {
-          method: "POST",
-        },
-      );
+      const payload = await authJsonFetch<ConnectResponse>(api.social.connect(platform), {
+        method: "POST",
+      });
 
       const authUrl =
         payload?.data?.authUrl ||
@@ -158,57 +134,52 @@ export default function AccountsPage() {
         payload?.data?.url ||
         payload?.url;
       if (!authUrl) {
-        throw new Error("OAuth URL unavailable");
+        throw new Error("OAuth connection URL unavailable.");
       }
 
       window.location.href = authUrl;
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Unable to connect account";
+        error instanceof Error ? error.message : "Unable to initiate authorization.";
       if (errorMessage.toLowerCase().includes("session expired")) {
         redirectToSignIn();
         return;
       }
-      setMessage({
-        type: "error",
-        text: errorMessage,
-      });
+      toast.error(errorMessage);
       setConnecting(null);
     }
   }
 
-  async function handleAccountAction(
-    accountId: string,
-    action: "refresh" | "disconnect",
-  ) {
+  async function handleRefreshToken(accountId: string) {
     try {
       setBusyAccountId(accountId);
-      await authJsonFetch(
-        action === "refresh"
-          ? api.social.refreshToken()
-          : api.social.disconnect(accountId),
-        {
-          method: action === "refresh" ? "POST" : "DELETE",
-          ...(action === "refresh"
-            ? { body: JSON.stringify({ socialId: accountId }) }
-            : {}),
-        },
-      );
-      await loadAccounts();
-      setMessage({
-        type: "success",
-        text: action === "refresh" ? "Account token refreshed." : "Account disconnected.",
+      await authJsonFetch(api.social.refreshToken(), {
+        method: "POST",
+        body: JSON.stringify({ socialId: accountId }),
       });
+      await loadAccounts();
+      toast.success("Account authorization token refreshed successfully!");
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unable to update account";
-      if (errorMessage.toLowerCase().includes("session expired")) {
-        redirectToSignIn();
-        return;
-      }
-      setMessage({ type: "error", text: errorMessage });
+      toast.error(error instanceof Error ? error.message : "Unable to refresh token.");
     } finally {
       setBusyAccountId(null);
+    }
+  }
+
+  async function confirmDisconnect() {
+    if (!accountToDisconnect) return;
+    try {
+      setDisconnecting(true);
+      await authJsonFetch(api.social.disconnect(accountToDisconnect._id), {
+        method: "DELETE",
+      });
+      toast.success("Social account disconnected.");
+      setAccountToDisconnect(null);
+      await loadAccounts();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to disconnect account.");
+    } finally {
+      setDisconnecting(false);
     }
   }
 
@@ -221,22 +192,14 @@ export default function AccountsPage() {
       if (connected) {
         const platformName = connected.charAt(0).toUpperCase() + connected.slice(1);
         if (status === "error") {
-          setMessage({
-            type: "error",
-            text: paramMsg || `Failed to connect ${platformName} account.`,
-          });
+          toast.error(paramMsg || `Failed to connect ${platformName} account.`);
         } else {
-          setMessage({
-            type: "success",
-            text: paramMsg || `Successfully connected ${platformName} account!`,
-          });
+          toast.success(paramMsg || `Successfully connected ${platformName} account!`);
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       } else if (paramMsg) {
-        setMessage({
-          type: status === "error" ? "error" : "success",
-          text: paramMsg,
-        });
+        if (status === "error") toast.error(paramMsg);
+        else toast.success(paramMsg);
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -252,7 +215,7 @@ export default function AccountsPage() {
   return (
     <CrmShell
       pageTitle="Social Accounts"
-      pageSubtitle="Connect the profiles you use to publish and keep access up to date."
+      pageSubtitle="Connect profiles to publish content and keep authorization up to date."
       breadcrumbs={["XSocial", "Channels", "Social Accounts"]}
       onSignOut={async () => {
         await logoutSession();
@@ -276,7 +239,7 @@ export default function AccountsPage() {
           </div>
           <div className="filter-chip">
             <AppIcon name="link" className="app-icon" />
-            Platforms live: {connectedPlatformsCount} / {platformCards.length}
+            Platforms active: {connectedPlatformsCount} / {platformCards.length}
           </div>
           <div className="filter-chip">
             <AppIcon name="bot" className="app-icon" />
@@ -285,125 +248,134 @@ export default function AccountsPage() {
         </>
       }
     >
-      <section className="crm-grid crm-grid-accounts">
-        <header className="workspace-head">
-          <h2 className="section-title">
-            <span className="icon-token" aria-hidden="true">
-              <AppIcon name="link" className="app-icon" />
-            </span>
-            Connected Accounts
-          </h2>
-          <p>
-            Connect Instagram and LinkedIn profiles to publish directly from
-            your workspace. You can refresh access or disconnect an account at any time.
-          </p>
-          <div className="workspace-kpis">
-            <article className="kpi-card">
-              <p className="kpi-label">Profiles Connected</p>
-              <p className="kpi-value">{connectedAccounts.length}</p>
-            </article>
-            <article className="kpi-card">
-              <p className="kpi-label">Platforms Live</p>
-              <p className="kpi-value">{connectedPlatformsCount}</p>
-            </article>
-            <article className="kpi-card">
-              <p className="kpi-label">Need Setup</p>
-              <p className="kpi-value">{unconnectedPlatformsCount}</p>
-            </article>
-          </div>
-          {message && (
-            <p className={`message ${message.type}`}>{message.text}</p>
-          )}
-        </header>
+      <ErrorBoundary fallbackTitle="Accounts overview encountered an issue">
+        <section className="crm-grid crm-grid-accounts">
+          <header className="workspace-head">
+            <h2 className="section-title">
+              <span className="icon-token" aria-hidden="true">
+                <AppIcon name="link" className="app-icon" />
+              </span>
+              Connected Accounts
+            </h2>
+            <p>
+              Connect Instagram and LinkedIn profiles to publish directly from your workspace. You
+              can refresh access or disconnect an account at any time.
+            </p>
+            <div className="workspace-kpis">
+              <article className="kpi-card">
+                <p className="kpi-label">Profiles Connected</p>
+                <p className="kpi-value">{connectedAccounts.length}</p>
+              </article>
+              <article className="kpi-card">
+                <p className="kpi-label">Platforms Active</p>
+                <p className="kpi-value">{connectedPlatformsCount}</p>
+              </article>
+              <article className="kpi-card">
+                <p className="kpi-label">Awaiting Setup</p>
+                <p className="kpi-value">{unconnectedPlatformsCount}</p>
+              </article>
+            </div>
+          </header>
 
-        <section className="crm-panel sidebar-panel">
-          <h3 className="section-title section-title-small">
-            <span className="icon-token" aria-hidden="true">
-              <AppIcon name="shield" className="app-icon" />
-            </span>
-            Account Access
-          </h3>
-          <ul className="sidebar-list">
-            <li>Connect accounts securely through each platform&apos;s authorization flow.</li>
-            <li>Use the right profile or page for every publishing workflow.</li>
-            <li>Refresh access when a platform token expires.</li>
-            <li>Disconnect an account whenever you no longer need it.</li>
-          </ul>
-        </section>
+          <section className="crm-panel sidebar-panel">
+            <h3 className="section-title section-title-small">
+              <span className="icon-token" aria-hidden="true">
+                <AppIcon name="shield" className="app-icon" />
+              </span>
+              OAuth Security & RBAC
+            </h3>
+            <ul className="text-xs text-slate-600 flex flex-col gap-2 mt-3 pl-4 list-disc">
+              <li>Connect accounts securely through standard OAuth 2.0 PKCE handshakes.</li>
+              <li>Tokens are isolated per workspace to enforce team boundary privacy.</li>
+              <li>Refresh access when a platform bearer token reaches expiration.</li>
+              <li>Disconnect accounts immediately when revoking social access.</li>
+            </ul>
+          </section>
 
-        {loading ? (
-          <p className="dash-state">Loading connected accounts...</p>
-        ) : (
-          <div className="platform-grid">
-            {groupedAccounts.map(({ platform, label, items }) => {
-              return (
-                <article key={platform} className="platform-card">
-                  <h2 className="section-title section-title-small">
-                    <span className="icon-token" aria-hidden="true">
-                      <AppIcon name="link" className="app-icon" />
-                    </span>
-                    {label}
-                  </h2>
-                  {items.length ? (
-                    <>
-                      <p className="platform-status connected">
-                        Live ({items.length})
-                      </p>
-                      <div className="account-list">
-                        {items.map((account) => {
-                          const info = formatAccountLabel(account);
-                          return (
-                            <div
-                              key={account._id}
-                              className="account-list-item"
-                            >
-                              <p className="platform-meta">{info.primary}</p>
-                              <p className="account-kind">{info.kindLabel}</p>
-                              <div className="account-actions">
-                                <button
-                                  type="button"
-                                  className="outline-btn"
-                                  onClick={() => handleAccountAction(account._id, "refresh")}
-                                  disabled={busyAccountId === account._id}
-                                >
-                                  Refresh Token
-                                </button>
-                                <button
-                                  type="button"
-                                  className="outline-btn"
-                                  onClick={() => handleAccountAction(account._id, "disconnect")}
-                                  disabled={busyAccountId === account._id}
-                                >
-                                  Disconnect
-                                </button>
+          {loading ? (
+            <div className="platform-grid">
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          ) : (
+            <div className="platform-grid">
+              {groupedAccounts.map(({ platform, label, items }) => {
+                return (
+                  <article key={platform} className="platform-card">
+                    <h2 className="section-title section-title-small">
+                      <span className="icon-token" aria-hidden="true">
+                        <AppIcon name="link" className="app-icon" />
+                      </span>
+                      {label}
+                    </h2>
+                    {items.length ? (
+                      <>
+                        <p className="platform-status connected">
+                          Live Connected ({items.length})
+                        </p>
+                        <div className="account-list">
+                          {items.map((account) => {
+                            const info = formatAccountLabel(account);
+                            return (
+                              <div key={account._id} className="account-list-item">
+                                <p className="platform-meta">{info.primary}</p>
+                                <p className="account-kind">{info.kindLabel}</p>
+                                <div className="account-actions flex gap-2 mt-2">
+                                  <button
+                                    type="button"
+                                    className="outline-btn text-xs px-2.5 py-1"
+                                    onClick={() => handleRefreshToken(account._id)}
+                                    disabled={busyAccountId === account._id}
+                                  >
+                                    {busyAccountId === account._id ? "Refreshing..." : "Refresh Token"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="outline-btn text-xs px-2.5 py-1 text-red-600 hover:border-red-300"
+                                    onClick={() => setAccountToDisconnect(account)}
+                                    disabled={busyAccountId === account._id}
+                                  >
+                                    Disconnect
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="platform-status disconnected">
-                        Awaiting authorization
-                      </p>
-                      <button
-                        className="connect-btn"
-                        disabled={connecting === platform}
-                        onClick={() => handleConnect(platform)}
-                      >
-                        {connecting === platform
-                          ? "Redirecting..."
-                          : `Authorize ${label}`}
-                      </button>
-                    </>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="platform-status disconnected">
+                          Awaiting authorization
+                        </p>
+                        <button
+                          className="connect-btn mt-3"
+                          disabled={connecting === platform}
+                          onClick={() => handleConnect(platform)}
+                        >
+                          {connecting === platform ? "Redirecting..." : `Authorize ${label}`}
+                        </button>
+                      </>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </ErrorBoundary>
+
+      {/* Disconnect Account Modal */}
+      <Modal
+        isOpen={Boolean(accountToDisconnect)}
+        onClose={() => setAccountToDisconnect(null)}
+        title="Disconnect Social Account?"
+        description={`Are you sure you want to disconnect this ${accountToDisconnect?.platform} account? Scheduled posts targeting this handle will fail until reconnected.`}
+        confirmLabel="Disconnect Account"
+        isDestructive
+        onConfirm={confirmDisconnect}
+        isLoading={disconnecting}
+      />
     </CrmShell>
   );
 }
