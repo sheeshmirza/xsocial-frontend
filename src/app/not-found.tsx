@@ -9,11 +9,11 @@ export default function NotFound() {
           <AppIcon name="alert" className="w-7 h-7" />
         </div>
         <p className="eyebrow text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">
-          404 Not Found
+          Page Not Found
         </p>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Page not found</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">We couldn't find that page</h1>
         <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-          The page you requested does not exist or has been moved to a different workspace route.
+          The link you followed may be broken, or the page may have been moved.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link href="/dashboard" className="primary-btn inline-flex items-center gap-2 px-5 py-2.5">
@@ -21,7 +21,7 @@ export default function NotFound() {
             Go to Dashboard
           </Link>
           <Link href="/signin" className="outline-btn inline-flex items-center gap-2 px-5 py-2.5">
-            Return to Sign In
+            Sign In
           </Link>
         </div>
       </section>

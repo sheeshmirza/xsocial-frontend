@@ -4,7 +4,7 @@ import AuthForm from "@/src/components/auth/AuthForm";
 export const metadata: Metadata = {
   title: "Sign Up",
   description:
-    "Create your XSocial account and start automating your social media workflows.",
+    "Create your XSocial account to plan, schedule, and publish your social media posts.",
 };
 
 export default function SignUpPage() {
