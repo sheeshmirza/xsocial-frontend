@@ -138,13 +138,13 @@ export default function AccountsPage() {
         payload?.data?.url ||
         payload?.url;
       if (!authUrl) {
-        throw new Error("OAuth connection URL unavailable.");
+        throw new Error("Could not start connection with social platform.");
       }
 
       window.location.href = authUrl;
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Unable to initiate authorization.";
+        error instanceof Error ? error.message : "Could not connect account. Please try again.";
       if (errorMessage.toLowerCase().includes("session expired")) {
         redirectToSignIn();
         return;
@@ -162,9 +162,9 @@ export default function AccountsPage() {
         body: JSON.stringify({ socialId: accountId }),
       });
       await queryClient.invalidateQueries({ queryKey: ["social-accounts"] });
-      toast.success("Account authorization token refreshed successfully!");
+      toast.success("Account connection refreshed successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to refresh token.");
+      toast.error(error instanceof Error ? error.message : "Could not refresh account connection.");
     } finally {
       setBusyAccountId(null);
     }
@@ -177,11 +177,11 @@ export default function AccountsPage() {
       await authJsonFetch(api.social.disconnect(accountToDisconnect._id), {
         method: "DELETE",
       });
-      toast.success("Social account disconnected.");
+      toast.success("Account disconnected.");
       setAccountToDisconnect(null);
       await queryClient.invalidateQueries({ queryKey: ["social-accounts"] });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to disconnect account.");
+      toast.error(error instanceof Error ? error.message : "Could not disconnect account.");
     } finally {
       setDisconnecting(false);
     }
@@ -196,9 +196,9 @@ export default function AccountsPage() {
       if (connected) {
         const platformName = connected.charAt(0).toUpperCase() + connected.slice(1);
         if (status === "error") {
-          toast.error(paramMsg || `Failed to connect ${platformName} account.`);
+          toast.error(paramMsg || `Could not connect ${platformName} account.`);
         } else {
-          toast.success(paramMsg || `Successfully connected ${platformName} account!`);
+          toast.success(paramMsg || `Connected your ${platformName} account!`);
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       } else if (paramMsg) {
@@ -211,9 +211,9 @@ export default function AccountsPage() {
 
   return (
     <CrmShell
-      pageTitle="Social Accounts"
-      pageSubtitle="Connect profiles to publish content and keep authorization up to date."
-      breadcrumbs={["XSocial", "Channels", "Social Accounts"]}
+      pageTitle="Connected Accounts"
+      pageSubtitle="Connect your social media accounts so you can publish directly from XSocial."
+      breadcrumbs={["XSocial", "Connected Accounts"]}
       onSignOut={async () => {
         await logoutSession();
         window.location.href = "/signin";
@@ -225,7 +225,7 @@ export default function AccountsPage() {
             className="outline-btn"
             onClick={() => refetchAccounts()}
           >
-            Refresh Sync
+            Refresh
           </button>
           <Link href="/dashboard" className="primary-btn">
             Open Dashboard
@@ -236,15 +236,15 @@ export default function AccountsPage() {
         <>
           <div className="filter-chip">
             <AppIcon name="users" className="app-icon" />
-            Connected profiles: {connectedAccounts.length}
+            Accounts: {connectedAccounts.length}
           </div>
           <div className="filter-chip">
             <AppIcon name="link" className="app-icon" />
-            Platforms active: {connectedPlatformsCount} / {platformCards.length}
+            Connected: {connectedPlatformsCount} of {platformCards.length}
           </div>
           <div className="filter-chip">
             <AppIcon name="bot" className="app-icon" />
-            Pending setup: {unconnectedPlatformsCount}
+            Not connected: {unconnectedPlatformsCount}
           </div>
         </>
       }
