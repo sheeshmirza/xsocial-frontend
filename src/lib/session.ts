@@ -1,42 +1,53 @@
 import { api } from "@/src/config/api";
+import { AuthResponseSchema, TokenSet } from "@/src/lib/schemas";
+import { telemetry } from "@/src/lib/telemetry";
 
 const ACCESS_TOKEN_KEY = "xs.accessToken";
 const REFRESH_TOKEN_KEY = "xs.refreshToken";
 const MAIN_DASHBOARD_URL_KEY = "xs.mainDashboardUrl";
 const REQUEST_TIMEOUT_MS = 15000;
+const MAX_NETWORK_RETRIES = 2;
+const INITIAL_RETRY_DELAY_MS = 800;
 
 let refreshInFlight: Promise<string> | null = null;
 
-type TokenSet = {
-  accessToken?: string;
-  refreshToken?: string;
-};
-
 const isBrowser = typeof window !== "undefined";
 
+/**
+ * Normalizes request headers into a Headers instance
+ */
 const normalizeHeaders = (headers?: HeadersInit): Headers => {
-  const next = new Headers(headers || {});
-  return next;
+  return new Headers(headers || {});
 };
 
+/**
+ * Checks whether Content-Type should be defaulted to JSON
+ */
 const shouldSetJsonContentType = (body: RequestInit["body"]) => {
-  if (!body) {
-    return false;
-  }
-  if (typeof FormData !== "undefined" && body instanceof FormData) {
-    return false;
-  }
+  if (!body) return false;
+  if (typeof FormData !== "undefined" && body instanceof FormData) return false;
   return true;
 };
 
-const parseJsonSafely = async (response: Response) =>
+/**
+ * Parses response JSON safely without throwing
+ */
+export const parseJsonSafely = async (response: Response) =>
   response.json().catch(() => null);
 
-const fetchWithTimeout = async (
+/**
+ * Sleeper utility for exponential backoff
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Fetch wrapper with AbortController timeout and signal propagation
+ */
+export const fetchWithTimeout = async (
   input: RequestInfo | URL,
   init: RequestInit = {},
   timeoutMs = REQUEST_TIMEOUT_MS,
-) => {
+): Promise<Response> => {
   if (typeof AbortController === "undefined") {
     return fetch(input, init);
   }
@@ -44,12 +55,12 @@ const fetchWithTimeout = async (
   const sourceSignal = init.signal;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
-    controller.abort();
+    controller.abort(new DOMException("Request timed out", "TimeoutError"));
   }, timeoutMs);
 
   const abortFromSource = () => {
     if (!controller.signal.aborted) {
-      controller.abort();
+      controller.abort(sourceSignal?.reason);
     }
   };
 
@@ -64,6 +75,17 @@ const fetchWithTimeout = async (
       ...init,
       signal: controller.signal,
     });
+  } catch (error) {
+    if (controller.signal.aborted && controller.signal.reason?.name === "TimeoutError") {
+      telemetry.trackEvent({
+        name: "request_timeout",
+        category: "network",
+        severity: "warning",
+        data: { url: String(input) },
+      });
+      throw new Error(`Request timed out after ${timeoutMs / 1000}s. Please check your connection.`);
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
     if (sourceSignal) {
@@ -72,24 +94,58 @@ const fetchWithTimeout = async (
   }
 };
 
-export const getAccessToken = (): string => {
-  if (!isBrowser) {
-    return "";
+/**
+ * Resilient fetch with exponential backoff on network failures / transient 5xx errors
+ */
+export const fetchWithRetry = async (
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  retries = MAX_NETWORK_RETRIES,
+  delayMs = INITIAL_RETRY_DELAY_MS,
+): Promise<Response> => {
+  let attempt = 0;
+  let lastError: unknown = null;
+
+  while (attempt <= retries) {
+    try {
+      const response = await fetchWithTimeout(input, init);
+      // If 502/503/504 transient server error and we have retries left, retry
+      if ([502, 503, 504].includes(response.status) && attempt < retries) {
+        attempt += 1;
+        await sleep(delayMs * Math.pow(2, attempt - 1));
+        continue;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      // Do not retry client aborts
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error;
+      }
+      if (attempt < retries) {
+        attempt += 1;
+        await sleep(delayMs * Math.pow(2, attempt - 1));
+        continue;
+      }
+      break;
+    }
   }
+
+  throw lastError instanceof Error ? lastError : new Error("Network request failed after retries.");
+};
+
+export const getAccessToken = (): string => {
+  if (!isBrowser) return "";
   return localStorage.getItem(ACCESS_TOKEN_KEY) || "";
 };
 
 export const getRefreshToken = (): string => {
-  if (!isBrowser) {
-    return "";
-  }
+  if (!isBrowser) return "";
   return localStorage.getItem(REFRESH_TOKEN_KEY) || "";
 };
 
 export const setSessionTokens = (tokens: TokenSet) => {
-  if (!isBrowser) {
-    return;
-  }
+  if (!isBrowser) return;
   if (tokens.accessToken) {
     localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
   }
@@ -99,9 +155,7 @@ export const setSessionTokens = (tokens: TokenSet) => {
 };
 
 export const clearSession = () => {
-  if (!isBrowser) {
-    return;
-  }
+  if (!isBrowser) return;
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(MAIN_DASHBOARD_URL_KEY);
@@ -111,33 +165,29 @@ export const logoutSession = async () => {
   const refreshToken = getRefreshToken();
   try {
     if (refreshToken) {
-      await fetch(api.auth.logout(), {
+      await fetchWithTimeout(api.auth.logout(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getAccessToken()}`,
         },
         body: JSON.stringify({ refreshToken }),
-      });
+      }, 5000);
     }
-  } catch (_error) {
-    // Best-effort logout. Local session is cleared regardless.
+  } catch (error) {
+    telemetry.captureException(error, { context: "logout" });
   } finally {
     clearSession();
   }
 };
 
 export const setMainDashboardUrl = (url: string) => {
-  if (!isBrowser || !url) {
-    return;
-  }
+  if (!isBrowser || !url) return;
   localStorage.setItem(MAIN_DASHBOARD_URL_KEY, url);
 };
 
 export const getMainDashboardUrl = (): string => {
-  if (!isBrowser) {
-    return "";
-  }
+  if (!isBrowser) return "";
   return localStorage.getItem(MAIN_DASHBOARD_URL_KEY) || "";
 };
 
@@ -148,19 +198,22 @@ const runRefreshSession = async (): Promise<string> => {
   }
 
   try {
-    const response = await fetchWithTimeout(api.auth.refresh(), {
+    const response = await fetchWithRetry(api.auth.refresh(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ refreshToken }),
-    });
+    }, 1);
 
-    const data = await parseJsonSafely(response);
+    const rawData = await parseJsonSafely(response);
     if (!response.ok) {
       clearSession();
       return "";
     }
+
+    const parsed = AuthResponseSchema.safeParse(rawData);
+    const data = parsed.success ? parsed.data : rawData;
 
     const accessToken =
       data?.data?.tokens?.accessToken ||
@@ -177,13 +230,15 @@ const runRefreshSession = async (): Promise<string> => {
       clearSession();
       return "";
     }
+
     setSessionTokens({
       accessToken,
       refreshToken: nextRefreshToken,
     });
 
     return accessToken;
-  } catch (_error) {
+  } catch (err) {
+    telemetry.captureException(err, { context: "token_refresh" });
     clearSession();
     return "";
   }
@@ -198,7 +253,7 @@ export const refreshSession = async (): Promise<string> => {
   return refreshInFlight;
 };
 
-export const isJwtExpired = (token: string, bufferSeconds = 15): boolean => {
+export const isJwtExpired = (token: string, bufferSeconds = 30): boolean => {
   if (!token) return true;
   try {
     const parts = token.split(".");
@@ -251,7 +306,7 @@ export const authFetch = async (
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetchWithTimeout(input, {
+  const response = await fetchWithRetry(input, {
     ...init,
     headers,
   });
@@ -265,14 +320,11 @@ export const authFetch = async (
 
     const retryHeaders = normalizeHeaders(init.headers);
     retryHeaders.set("Authorization", `Bearer ${refreshed}`);
-    if (
-      !retryHeaders.has("Content-Type") &&
-      shouldSetJsonContentType(init.body)
-    ) {
+    if (!retryHeaders.has("Content-Type") && shouldSetJsonContentType(init.body)) {
       retryHeaders.set("Content-Type", "application/json");
     }
 
-    const retryResponse = await fetchWithTimeout(input, {
+    const retryResponse = await fetchWithRetry(input, {
       ...init,
       headers: retryHeaders,
     });
@@ -290,6 +342,18 @@ export const authFetch = async (
   return response;
 };
 
+export class ApiHttpError extends Error {
+  public status: number;
+  public details?: any;
+
+  constructor(status: number, message: string, details?: any) {
+    super(message);
+    this.name = "ApiHttpError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
 export const authJsonFetch = async <T = any>(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -298,6 +362,11 @@ export const authJsonFetch = async <T = any>(
   const payload = await parseJsonSafely(response);
 
   if (!response.ok) {
+    const message =
+      payload?.message ||
+      payload?.error ||
+      `Request failed with status ${response.status}`;
+
     if (response.status === 401) {
       clearSession();
       if (
@@ -308,15 +377,11 @@ export const authJsonFetch = async <T = any>(
         !window.location.pathname.startsWith("/forgot-password") &&
         !window.location.pathname.startsWith("/reset-password")
       ) {
-        window.location.href = "/signin";
+        window.location.href = `/signin?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
-      throw new Error("Session expired. Please sign in again.");
     }
-    const message =
-      payload?.message ||
-      payload?.error ||
-      "Request failed";
-    throw new Error(message);
+
+    throw new ApiHttpError(response.status, message, payload);
   }
 
   return payload as T;
@@ -326,11 +391,12 @@ export const jsonFetch = async <T = any>(
   input: RequestInfo | URL,
   init: RequestInit = {},
 ): Promise<T> => {
-  const response = await fetchWithTimeout(input, init);
+  const response = await fetchWithRetry(input, init);
   const payload = await parseJsonSafely(response);
 
   if (!response.ok) {
-    throw new Error(payload?.message || "Request failed");
+    const message = payload?.message || payload?.error || `Request failed with status ${response.status}`;
+    throw new ApiHttpError(response.status, message, payload);
   }
 
   return payload as T;
