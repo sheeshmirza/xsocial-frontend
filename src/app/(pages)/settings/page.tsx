@@ -181,7 +181,7 @@ export default function SettingsPage() {
 
         {profileQuery.isError ? (
           <ErrorFallback
-            status={500}
+            type="500"
             title="Unable to load profile"
             message={profileQuery.error instanceof Error ? profileQuery.error.message : "Failed to load account settings."}
             onRetry={() => {
