@@ -78,16 +78,23 @@ export default function CrmShell({
   };
 
   useEffect(() => {
-    if (!mobileOpen) {
-      return;
-    }
+    if (!mobileOpen) return;
+
+    // Lock body scroll on mobile when drawer is open
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMobileOpen(false);
       }
     };
+
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
   }, [mobileOpen]);
 
   const allItems = useMemo(() => navGroups.flatMap((g) => g.items), []);
@@ -103,7 +110,9 @@ export default function CrmShell({
           <button
             type="button"
             className="icon-btn mobile-only"
-            aria-label="Open navigation"
+            aria-label="Open navigation menu"
+            aria-expanded={mobileOpen}
+            aria-controls="crm-sidebar"
             onClick={() => setMobileOpen(true)}
           >
             <AppIcon name="menu" className="app-icon" />
@@ -120,16 +129,25 @@ export default function CrmShell({
         </div>
 
         <div className="crm-topnav-right">
-          <button type="button" className="ghost-btn" onClick={handleSignOut}>
+          <button
+            type="button"
+            className="ghost-btn"
+            onClick={handleSignOut}
+            aria-label="Sign out of XSocial"
+          >
             Sign Out
           </button>
         </div>
       </header>
 
       <div className="crm-body">
-        <aside className={`crm-sidebar glass-panel ${mobileOpen ? "open" : ""}`}>
-          <div className="crm-sidebar-head mobile-only">
-            <p>Navigation</p>
+        <aside
+          id="crm-sidebar"
+          aria-label="Workspace navigation"
+          className={`crm-sidebar glass-panel ${mobileOpen ? "open" : ""}`}
+        >
+          <div className="crm-sidebar-head mobile-only flex items-center justify-between pb-3 border-b border-slate-200">
+            <p className="font-bold text-xs uppercase tracking-wider text-slate-700">Navigation</p>
             <button
               type="button"
               className="icon-btn"
@@ -150,6 +168,7 @@ export default function CrmShell({
                     key={item.href + item.label}
                     href={item.href}
                     className={`crm-nav-link ${active ? "active" : ""}`}
+                    aria-current={active ? "page" : undefined}
                     onClick={() => setMobileOpen(false)}
                   >
                     <AppIcon name={item.icon} className="app-icon" />
@@ -167,15 +186,17 @@ export default function CrmShell({
           <button
             type="button"
             className="crm-overlay"
-            aria-label="Close navigation"
+            aria-label="Close navigation overlay"
             onClick={() => setMobileOpen(false)}
           />
         ) : null}
 
-        <section className="crm-main" id="main-content">
+        <main className="crm-main" id="main-content">
           <div className="crm-page-header">
             <div>
-              <p className="crm-breadcrumbs">{breadcrumbs.join(" / ")}</p>
+              <nav aria-label="Breadcrumb">
+                <p className="crm-breadcrumbs">{breadcrumbs.join(" / ")}</p>
+              </nav>
               <h1>{pageTitle}</h1>
               {pageSubtitle ? <p className="subtitle">{pageSubtitle}</p> : null}
             </div>
@@ -183,7 +204,7 @@ export default function CrmShell({
           </div>
           {filters ? <div className="crm-page-filters">{filters}</div> : null}
           {children}
-        </section>
+        </main>
       </div>
     </div>
   );
