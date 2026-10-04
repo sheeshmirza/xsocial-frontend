@@ -367,7 +367,7 @@ export default function ScheduledPostsTable({
         isOpen={Boolean(editingPost)}
         onClose={() => setEditingPost(null)}
         title="Edit Scheduled Post"
-        description="Update scheduled timing and content before automatic publication."
+        description="Change your post text or update when it will be published."
         confirmLabel="Save Changes"
         onConfirm={handleSaveEdit}
         isLoading={savingEdit}
@@ -386,7 +386,7 @@ export default function ScheduledPostsTable({
           </div>
           <div>
             <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">
-              Caption
+              Message
             </label>
             <textarea
               value={editCaption}
@@ -427,8 +427,8 @@ export default function ScheduledPostsTable({
         isOpen={Boolean(postToDelete)}
         onClose={() => setPostToDelete(null)}
         title="Delete Scheduled Post?"
-        description="This scheduled publication job will be permanently canceled."
-        confirmLabel="Delete Job"
+        description="This post will be permanently canceled and will not be published."
+        confirmLabel="Delete Post"
         isDestructive
         onConfirm={confirmDeletePost}
         isLoading={Boolean(deletingId)}

@@ -65,10 +65,10 @@ export default function PublishedPostsTable({
     setResharingId(postId);
     try {
       await authJsonFetch(api.posts.reshare(postId), { method: "POST" });
-      toast.success("Post re-shared across targeted social channels!");
+      toast.success("Post shared again successfully!");
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to re-share post.");
+      toast.error(error instanceof Error ? error.message : "Could not share post again.");
     } finally {
       setResharingId(null);
     }
@@ -80,11 +80,11 @@ export default function PublishedPostsTable({
     try {
       await authJsonFetch(api.posts.deletePublished(postToDelete), { method: "DELETE" });
       setSelectedIds((prev) => prev.filter((id) => id !== postToDelete));
-      toast.success("Published post deleted successfully.");
+      toast.success("Post removed from history.");
       setPostToDelete(null);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete post.");
+      toast.error(error instanceof Error ? error.message : "Could not remove post.");
     } finally {
       setDeletingId(null);
     }
@@ -98,11 +98,11 @@ export default function PublishedPostsTable({
         method: "DELETE",
         body: JSON.stringify({ ids: selectedIds }),
       });
-      toast.success(`${selectedIds.length} published posts deleted.`);
+      toast.success(`${selectedIds.length} posts removed from history.`);
       setSelectedIds([]);
       await onReload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Bulk delete failed.");
+      toast.error(error instanceof Error ? error.message : "Could not remove selected posts.");
     } finally {
       setBulkDeleting(false);
     }
@@ -115,14 +115,14 @@ export default function PublishedPostsTable({
           <span className="icon-token" aria-hidden="true">
             <AppIcon name="trend" className="app-icon" />
           </span>
-          Published Content History ({posts.length})
+          Published Posts ({posts.length})
         </h3>
       </div>
 
       {loading ? (
         <TableSkeleton rows={4} cols={5} />
       ) : posts.length === 0 ? (
-        <p className="composer-empty">No published content found in this workspace.</p>
+        <p className="composer-empty">You haven't published any posts yet.</p>
       ) : (
         <>
           {selectedIds.length > 0 && (
@@ -134,7 +134,7 @@ export default function PublishedPostsTable({
                 onClick={handleBulkDelete}
                 disabled={bulkDeleting}
               >
-                {bulkDeleting ? "Deleting..." : "Delete Selected"}
+                {bulkDeleting ? "Removing..." : "Delete Selected"}
               </button>
               <button
                 type="button"
@@ -158,10 +158,10 @@ export default function PublishedPostsTable({
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th scope="col">Title & Caption</th>
-                  <th scope="col">Platforms Delivered</th>
-                  <th scope="col">Published At</th>
-                  <th scope="col">Status & Expiry</th>
+                  <th scope="col">Title & Message</th>
+                  <th scope="col">Channels Shared</th>
+                  <th scope="col">Published On</th>
+                  <th scope="col">Status</th>
                   <th scope="col" className="text-right">
                     Actions
                   </th>
@@ -217,16 +217,16 @@ export default function PublishedPostsTable({
                             className="outline-btn text-xs px-2.5 py-1"
                             onClick={() => handleInspect(post._id)}
                           >
-                            Inspect
+                            View Details
                           </button>
                           <button
                             type="button"
                             className="outline-btn text-xs px-2.5 py-1"
                             onClick={() => handleReshare(post._id)}
                             disabled={resharingId === post._id}
-                            title="Re-publish this post content immediately"
+                            title="Share this post again"
                           >
-                            {resharingId === post._id ? "Sharing..." : "Re-share"}
+                            {resharingId === post._id ? "Sharing..." : "Share Again"}
                           </button>
                           <button
                             type="button"
@@ -251,14 +251,13 @@ export default function PublishedPostsTable({
       <Modal
         isOpen={Boolean(inspectingPost)}
         onClose={() => setInspectingPost(null)}
-        title={inspectingPost?.title || "Post Inspection Details"}
-        description={`Post ID: ${inspectingPost?._id}`}
+        title={inspectingPost?.title || "Post Details"}
         cancelLabel="Close"
       >
         {inspectingPost ? (
           <div className="flex flex-col gap-3 text-xs text-slate-700">
             <div>
-              <span className="font-bold uppercase text-slate-500 block mb-1">Caption</span>
+              <span className="font-bold uppercase text-slate-500 block mb-1">Message</span>
               <p className="p-3 bg-slate-50 rounded-lg whitespace-pre-wrap border border-slate-200">
                 {inspectingPost.caption}
               </p>
@@ -273,18 +272,18 @@ export default function PublishedPostsTable({
             )}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
               <div>
-                <span className="font-bold text-slate-500 block">Published At:</span>
+                <span className="font-bold text-slate-500 block">Published on:</span>
                 <p>{formatDate(inspectingPost.publishedTime || inspectingPost.createdAt)}</p>
               </div>
               <div>
                 <span className="font-bold text-slate-500 block">Post Type:</span>
-                <p className="uppercase">{inspectingPost.postType || "Auto"}</p>
+                <p className="uppercase">{inspectingPost.postType || "Standard"}</p>
               </div>
             </div>
             {inspectingPost.media?.length ? (
               <div>
                 <span className="font-bold text-slate-500 block mb-1">
-                  Attached Media ({inspectingPost.media.length}):
+                  Photos & Videos ({inspectingPost.media.length}):
                 </span>
                 <div className="flex flex-col gap-1">
                   {inspectingPost.media.map((m, idx) => (
@@ -295,7 +294,7 @@ export default function PublishedPostsTable({
                       rel="noopener noreferrer"
                       className="text-sky-700 hover:underline truncate block"
                     >
-                      {m.name || m.url} ({m.type})
+                      {m.name || m.url}
                     </a>
                   ))}
                 </div>
@@ -309,9 +308,9 @@ export default function PublishedPostsTable({
       <Modal
         isOpen={Boolean(postToDelete)}
         onClose={() => setPostToDelete(null)}
-        title="Delete Published Post Record?"
-        description="This will permanently delete the post record from your workspace analytics and history."
-        confirmLabel="Delete Record"
+        title="Remove Post from History?"
+        description="This removes the post from your history list. (Note: this does not delete the post from your social media account)."
+        confirmLabel="Remove from History"
         isDestructive
         onConfirm={confirmDelete}
         isLoading={Boolean(deletingId)}
