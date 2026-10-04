@@ -76,9 +76,9 @@ export default function SettingsPage() {
         body: JSON.stringify({ fullName: fullName.trim(), timezone: timezone.trim() }),
       });
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success("Profile details updated successfully.");
+      toast.success("Profile updated successfully.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to update profile.");
+      toast.error(err.message || "Could not update profile.");
     } finally {
       setSaving(false);
     }
@@ -94,9 +94,9 @@ export default function SettingsPage() {
       });
       setOldPassword("");
       setNewPassword("");
-      toast.success("Password changed successfully.");
+      toast.success("Password updated successfully.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to change password.");
+      toast.error(err.message || "Could not update password.");
     } finally {
       setChangingPassword(false);
     }
@@ -114,14 +114,14 @@ export default function SettingsPage() {
       // Zero mock: strictly use live backend response
       const generatedToken = resp?.key || resp?.apiKey?.key;
       if (!generatedToken) {
-        throw new Error("Backend did not return the secret API key token.");
+        throw new Error("Could not generate access key. Please try again.");
       }
       setCreatedRawKey(generatedToken);
       setNewKeyName("");
-      toast.success("New developer API key generated!");
+      toast.success("New API key generated!");
       await queryClient.invalidateQueries({ queryKey: ["api-keys"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to generate API key.");
+      toast.error(err.message || "Could not generate API key.");
     } finally {
       setCreatingKey(false);
     }
@@ -132,11 +132,11 @@ export default function SettingsPage() {
     setDeletingKey(true);
     try {
       await authJsonFetch(api.developer.deleteApiKey(keyToDelete), { method: "DELETE" });
-      toast.success("API key revoked permanently.");
+      toast.success("API key deleted.");
       setKeyToDelete(null);
       await queryClient.invalidateQueries({ queryKey: ["api-keys"] });
     } catch (err: any) {
-      toast.error(err.message || "Failed to revoke API key.");
+      toast.error(err.message || "Could not delete API key.");
     } finally {
       setDeletingKey(false);
     }
@@ -144,8 +144,8 @@ export default function SettingsPage() {
 
   return (
     <CrmShell
-      pageTitle="Settings & Developer Controls"
-      pageSubtitle="Manage identity, passwords, and developer API tokens."
+      pageTitle="Settings"
+      pageSubtitle="Manage your personal profile, security, and developer access keys."
       breadcrumbs={["XSocial", "Settings"]}
       onSignOut={async () => {
         await logoutSession();
