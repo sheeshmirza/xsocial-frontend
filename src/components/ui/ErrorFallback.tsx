@@ -13,46 +13,54 @@ interface ErrorFallbackProps {
   showHomeLink?: boolean;
 }
 
-const errorConfig: Record<ErrorType, { title: string; defaultMessage: string; icon: "alert" | "shield" | "clock" }> = {
+const errorConfig: Record<ErrorType, { title: string; defaultMessage: string; icon: "alert" | "shield" | "clock"; tag: string }> = {
   "400": {
-    title: "Invalid Request",
-    defaultMessage: "The server could not process this request. Please verify the entered data and try again.",
+    title: "Check Your Details",
+    defaultMessage: "Some of the information entered looks incorrect or is missing. Please check your inputs and try again.",
     icon: "alert",
+    tag: "Needs Attention",
   },
   "401": {
-    title: "Session Expired",
-    defaultMessage: "Your session has timed out or is unauthorized. Please sign in again to continue.",
+    title: "Please Sign In Again",
+    defaultMessage: "You have been signed out to protect your account. Please sign back in to continue.",
     icon: "shield",
+    tag: "Sign In Required",
   },
   "403": {
-    title: "Access Forbidden",
-    defaultMessage: "You do not have permission to view this resource or perform this action in this workspace.",
+    title: "Permission Needed",
+    defaultMessage: "You do not have access to view this page or perform this action. Please ask your team administrator for help.",
     icon: "shield",
+    tag: "Restricted",
   },
   "404": {
-    title: "Page Not Found",
-    defaultMessage: "The page or resource you requested does not exist or has been moved.",
+    title: "We Couldn't Find That Page",
+    defaultMessage: "The link you followed might be broken, or the page may have been moved.",
     icon: "alert",
+    tag: "Not Found",
   },
   "500": {
-    title: "Internal Server Error",
-    defaultMessage: "Our backend services encountered an unexpected issue. Please retry in a few moments.",
+    title: "Something Went Wrong on Our End",
+    defaultMessage: "We ran into an unexpected hiccup. Please wait a moment and try again.",
     icon: "alert",
+    tag: "Temporary Issue",
   },
   timeout: {
-    title: "Request Timed Out",
-    defaultMessage: "The server took too long to respond. Please check your network connection and retry.",
+    title: "Taking Longer Than Usual",
+    defaultMessage: "The request took too long to finish. Please check your internet connection and try again.",
     icon: "clock",
+    tag: "Connection Delay",
   },
   network: {
-    title: "Network Offline",
-    defaultMessage: "You appear to be offline or experiencing connection drops. Reconnecting will resume operations.",
+    title: "No Internet Connection",
+    defaultMessage: "You are currently offline. Check your Wi-Fi or mobile data to continue.",
     icon: "alert",
+    tag: "Offline",
   },
   unknown: {
     title: "Something Went Wrong",
-    defaultMessage: "An unexpected error occurred while rendering this view. You can reload or return to the dashboard.",
+    defaultMessage: "We ran into a problem loading this screen. You can try refreshing or return to your dashboard.",
     icon: "alert",
+    tag: "Notice",
   },
 };
 
@@ -74,7 +82,7 @@ export default function ErrorFallback({
           <AppIcon name={config.icon} className="w-7 h-7" />
         </div>
         <p className="eyebrow text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">
-          {type !== "unknown" ? `Error ${type.toUpperCase()}` : "Application Error"}
+          {config.tag}
         </p>
         <h1 className="text-2xl font-bold text-slate-900 mb-3">{displayTitle}</h1>
         <p className="text-sm text-slate-600 mb-6 leading-relaxed">{displayMessage}</p>

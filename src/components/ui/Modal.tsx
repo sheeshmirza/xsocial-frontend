@@ -118,7 +118,7 @@ export default function Modal({
                   : "primary-btn"
               }`}
             >
-              {isLoading ? "Processing..." : confirmLabel}
+              {isLoading ? "Please wait..." : confirmLabel}
             </button>
           ) : null}
         </div>

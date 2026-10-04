@@ -50,8 +50,8 @@ export default function OfflineIndicator() {
       <AppIcon name={!isOnline ? "alert" : "check"} className="w-4 h-4" />
       <span>
         {!isOnline
-          ? "You are currently offline. Changes will sync once reconnected."
-          : "Internet connection restored! Syncing data..."}
+          ? "You are offline. Your changes will save once you're back online."
+          : "You're back online! Updating your information..."}
       </span>
     </div>
   );

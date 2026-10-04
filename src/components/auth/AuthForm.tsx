@@ -105,21 +105,21 @@ export default function AuthForm({ mode }: Props) {
           setMainDashboardUrl(mainDashboardUrl);
         }
 
-        setSuccess("Welcome back. Redirecting to workspace...");
+        setSuccess("Welcome back! Taking you to your dashboard...");
         router.replace("/dashboard");
         return;
       }
 
       if (data?.verificationToken) {
-        setSuccess("Account created successfully. Redirecting to verify your email...");
+        setSuccess("Account created! Taking you to confirm your email...");
         router.push(`/verify-email?token=${encodeURIComponent(data.verificationToken)}`);
         return;
       }
 
-      setSuccess("Account created successfully. Please verify your email before signing in.");
+      setSuccess("Account created! Please check your inbox to confirm your email before signing in.");
       router.push("/signin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed. Please check credentials.");
+      setError(err instanceof Error ? err.message : "Could not sign in. Please check your email and password.");
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ export default function AuthForm({ mode }: Props) {
             <AppIcon name={mode === "signin" ? "shield" : "users"} className="app-icon" />
           </span>
           <p className="subtitle-inline">
-            {mode === "signin" ? "Secure sign in" : "Set up your workspace"}
+            {mode === "signin" ? "Sign In" : "Get Started"}
           </p>
         </div>
         <h1 id="auth-title">{content.title}</h1>
@@ -173,7 +173,7 @@ export default function AuthForm({ mode }: Props) {
           </div>
 
           <button type="submit" disabled={loading} className="primary-btn">
-            {loading ? "Processing..." : content.button}
+            {loading ? "Please wait..." : content.button}
           </button>
         </form>
 

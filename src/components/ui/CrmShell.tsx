@@ -40,17 +40,17 @@ type CrmShellProps = {
 
 const navGroups: NavGroup[] = [
   {
-    title: "Core Workspace",
+    title: "Main Menu",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: "home" },
-      { label: "Social Accounts", href: "/accounts", icon: "users" },
+      { label: "Connected Accounts", href: "/accounts", icon: "users" },
       { label: "Brands & Workspaces", href: "/brands", icon: "folder" },
     ],
   },
   {
-    title: "Configuration",
+    title: "Preferences",
     items: [
-      { label: "Settings & API Keys", href: "/settings", icon: "settings" },
+      { label: "Settings", href: "/settings", icon: "settings" },
     ],
   },
 ];

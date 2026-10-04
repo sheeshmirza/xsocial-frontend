@@ -97,10 +97,15 @@ export function useToast(): ToastContextValue {
   if (!context) {
     // Return safe fallback if used outside provider
     return {
-      showToast: (msg: string) => console.log(msg),
-      success: (msg: string) => console.log(msg),
-      error: (msg: string) => console.error(msg),
-      info: (msg: string) => console.info(msg),
+      showToast: () => {},
+      success: () => {},
+      error: (msg: string) => {
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.error(msg);
+        }
+      },
+      info: () => {},
     };
   }
   return context;
