@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | XSocial",
   },
   description:
-    "XSocial is an AI-powered social automation platform. Plan, create, schedule, publish, and automate content across Instagram and LinkedIn with multi-workspace RBAC.",
+    "XSocial is an AI-powered social media management app. Plan, create, schedule, publish, and automate content across Instagram and LinkedIn for your team, brand, or business.",
   applicationName: "XSocial",
   keywords: [
     "XSocial",

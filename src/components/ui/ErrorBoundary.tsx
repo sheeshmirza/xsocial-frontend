@@ -53,7 +53,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <div className="flex items-center gap-2.5 text-red-700">
             <AppIcon name="alert" className="w-5 h-5 flex-shrink-0" />
             <h3 className="font-bold text-sm">
-              {this.props.fallbackTitle || "This component encountered a rendering issue"}
+              {this.props.fallbackTitle || "This section had a problem loading"}
             </h3>
           </div>
           <p className="text-xs text-slate-600">
@@ -64,7 +64,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             onClick={this.handleReset}
             className="self-start text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-800 text-white transition-colors"
           >
-            Retry Component
+            Try Again
           </button>
         </div>
       );

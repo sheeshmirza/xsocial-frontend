@@ -21,8 +21,8 @@ export default function GlobalError({
       <body>
         <ErrorFallback
           type="500"
-          title="Critical Application Error"
-          message="A fatal error occurred while loading XSocial. Click below to reload the application."
+          title="Something Went Wrong"
+          message="We ran into an unexpected problem while loading the app. Please click below to reload and try again."
           onRetry={reset}
         />
       </body>
