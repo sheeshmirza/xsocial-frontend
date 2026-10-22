@@ -52,8 +52,12 @@ export default function PublishedPostsTable({
   async function handleInspect(postId: string) {
     setLoadingInspection(true);
     try {
-      const payload = await authJsonFetch<{ data?: PostItem }>(api.posts.get(postId));
-      setInspectingPost(payload?.data || posts.find((p) => p._id === postId) || null);
+      const payload = await authJsonFetch<PostItem | { data?: PostItem }>(api.posts.get(postId));
+      const resolvedPost =
+        payload && ("caption" in payload ? payload : payload.data)
+          ? ("caption" in payload ? (payload as PostItem) : (payload as { data: PostItem }).data)
+          : posts.find((p) => p._id === postId) || null;
+      setInspectingPost(resolvedPost);
     } catch {
       // Fallback to local memory if single get endpoint fails
       setInspectingPost(posts.find((p) => p._id === postId) || null);

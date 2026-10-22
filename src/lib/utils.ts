@@ -1,4 +1,18 @@
 import { clsx, type ClassValue } from "clsx";
+import type { SocialAccount } from "./schemas";
+
+/**
+ * Normalizes an API social account payload into a standardized SocialAccount entity.
+ */
+export const normalizeSocialAccount = (account: any): SocialAccount => {
+  const resolvedId = account._id || account.id || "";
+  return {
+    ...account,
+    _id: resolvedId,
+    id: resolvedId,
+    platform: String(account.platform || "").toLowerCase() as any,
+  };
+};
 
 /**
  * Combines CSS class names conditionally, filtering out falsy values.

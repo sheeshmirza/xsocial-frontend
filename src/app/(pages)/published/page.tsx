@@ -13,19 +13,10 @@ import { api, SUPPORTED_SOCIAL_PLATFORMS } from "@/src/config/api";
 import { authJsonFetch, clearSession, logoutSession } from "@/src/lib/session";
 import { formatDate } from "@/src/lib/utils";
 import { SocialAccountsResponseSchema } from "@/src/lib/schemas";
+import { normalizeSocialAccount } from "@/src/lib/utils";
 import type { PostItem, SocialAccount } from "@/src/lib/schemas";
 
 const supportedPlatformSet = new Set<string>(SUPPORTED_SOCIAL_PLATFORMS);
-
-const normalizeSocialAccount = (account: any): SocialAccount => {
-  const resolvedId = account._id || account.id || "";
-  return {
-    ...account,
-    _id: resolvedId,
-    id: resolvedId,
-    platform: String(account.platform || "").toLowerCase() as any,
-  };
-};
 
 type ViewMode = "cards" | "table";
 

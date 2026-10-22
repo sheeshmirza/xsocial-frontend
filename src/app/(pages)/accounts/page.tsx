@@ -15,6 +15,7 @@ import { CardSkeleton } from "@/src/components/ui/Skeleton";
 import { useToast } from "@/src/components/ui/ToastContext";
 import ErrorBoundary from "@/src/components/ui/ErrorBoundary";
 import { authJsonFetch, clearSession, logoutSession } from "@/src/lib/session";
+import { normalizeSocialAccount } from "@/src/lib/utils";
 import { SocialAccountsResponseSchema } from "@/src/lib/schemas";
 import type { SocialAccount } from "@/src/lib/schemas";
 
@@ -41,16 +42,6 @@ const platformCards = [
 ] satisfies Array<{ platform: Platform; label: string }>;
 
 const supportedPlatformSet = new Set<string>(SUPPORTED_SOCIAL_PLATFORMS);
-
-const normalizeSocialAccount = (account: SocialAccount): SocialAccount => {
-  const resolvedId = account._id || account.id || "";
-  return {
-    ...account,
-    _id: resolvedId,
-    id: resolvedId,
-    platform: String(account.platform || "").toLowerCase() as Platform,
-  };
-};
 
 export default function AccountsPage() {
   const toast = useToast();
