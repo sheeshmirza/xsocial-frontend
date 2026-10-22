@@ -11,7 +11,7 @@ export default function NotFound() {
         <p className="eyebrow text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">
           Page Not Found
         </p>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">We couldn't find that page</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">We couldn&apos;t find that page</h1>
         <p className="text-sm text-slate-600 mb-6 leading-relaxed">
           The link you followed may be broken, or the page may have been moved.
         </p>

@@ -1,8 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Sora, Manrope } from "next/font/google";
 import QueryProvider from "@/src/components/providers/QueryProvider";
 import { ToastProvider } from "@/src/components/ui/ToastContext";
 import OfflineIndicator from "@/src/components/ui/OfflineIndicator";
 import "./global.css";
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-sora",
+  display: "swap",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,15 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${sora.variable} ${manrope.variable}`}>
       <body>
         <a href="#main-content" className="skip-link">
           Skip to main content

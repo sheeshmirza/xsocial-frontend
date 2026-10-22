@@ -232,7 +232,7 @@ export default function ScheduledPostsTable({
       {loading ? (
         <TableSkeleton rows={4} cols={5} />
       ) : posts.length === 0 ? (
-        <p className="composer-empty">You don't have any scheduled posts yet.</p>
+        <p className="composer-empty">You don&apos;t have any scheduled posts yet.</p>
       ) : (
         <>
           {selectedIds.length > 0 && (

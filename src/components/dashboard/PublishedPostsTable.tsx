@@ -129,7 +129,7 @@ export default function PublishedPostsTable({
       {loading ? (
         <TableSkeleton rows={4} cols={5} />
       ) : posts.length === 0 ? (
-        <p className="composer-empty">You haven't published any posts yet.</p>
+        <p className="composer-empty">You haven&apos;t published any posts yet.</p>
       ) : (
         <>
           {selectedIds.length > 0 && (

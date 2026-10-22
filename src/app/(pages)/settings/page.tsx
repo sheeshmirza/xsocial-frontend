@@ -333,7 +333,7 @@ export default function SettingsPage() {
                   Your API Keys ({apiKeys.length})
                 </h4>
                 {apiKeys.length === 0 ? (
-                  <p className="text-xs text-slate-400">You haven't created any API keys yet.</p>
+                  <p className="text-xs text-slate-400">You haven&apos;t created any API keys yet.</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {apiKeys.map((k) => (

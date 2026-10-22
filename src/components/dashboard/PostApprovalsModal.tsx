@@ -69,7 +69,7 @@ export default function PostApprovalsModal({
         {pendingPosts.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-xs">
             <p className="font-semibold text-slate-700">No posts waiting for approval.</p>
-            <p className="mt-1">You're all caught up!</p>
+            <p className="mt-1">You&apos;re all caught up!</p>
           </div>
         ) : (
           pendingPosts.map((post) => (

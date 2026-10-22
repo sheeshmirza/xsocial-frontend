@@ -78,7 +78,7 @@ export default function AccountFilterBar({
           <p className="composer-empty">Loading your accounts...</p>
         ) : !accounts.length ? (
           <p className="composer-empty">
-            You haven't connected any accounts yet. Head over to{" "}
+            You haven&apos;t connected any accounts yet. Head over to{" "}
             <Link href="/accounts" className="link-inline">
               Connected Accounts
             </Link>{" "}

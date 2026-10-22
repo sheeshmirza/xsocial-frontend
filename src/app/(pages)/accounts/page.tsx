@@ -207,7 +207,7 @@ export default function AccountsPage() {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-  }, []);
+  }, [toast]);
 
   return (
     <CrmShell
