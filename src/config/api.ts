@@ -123,6 +123,8 @@ export const api = {
       getApiUrl(`${API_CONFIG.ENDPOINTS.POSTS}/bulk/pause-recurrence`),
     bulkResumeRecurrence: () =>
       getApiUrl(`${API_CONFIG.ENDPOINTS.POSTS}/bulk/resume-recurrence`),
+    semanticSearch: (query = "") =>
+      getApiUrl(`${API_CONFIG.ENDPOINTS.POSTS}/search/semantic${query}`),
   },
   uploads: {
     media: () => getApiUrl(API_CONFIG.ENDPOINTS.UPLOAD_MEDIA),

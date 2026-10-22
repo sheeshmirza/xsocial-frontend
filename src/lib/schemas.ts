@@ -216,3 +216,22 @@ export const ApiKeysResponseSchema = z.object({
   key: z.string().optional(),
   apiKey: ApiKeyItemSchema.optional(),
 });
+
+// Semantic Vector Search Result Schema
+export const SemanticSearchResultSchema = z.object({
+  postId: z.string(),
+  brandId: z.string().optional(),
+  content: z.string(),
+  platform: z.string().optional(),
+  status: z.string().optional(),
+  score: z.number(),
+  createdAt: z.string().optional(),
+});
+export type SemanticSearchResult = z.infer<typeof SemanticSearchResultSchema>;
+
+export const SemanticSearchResponseSchema = z.object({
+  results: z.array(SemanticSearchResultSchema),
+  total: z.number(),
+  query: z.string(),
+});
+export type SemanticSearchResponse = z.infer<typeof SemanticSearchResponseSchema>;
