@@ -66,10 +66,17 @@ export default function PublishedPostsTable({
     }
   }
 
-  async function handleReshare(postId: string) {
-    setResharingId(postId);
+  async function handleReshare(post: PostItem) {
+    setResharingId(post._id);
     try {
-      await authJsonFetch(api.posts.reshare(postId), { method: "POST" });
+      await authJsonFetch(api.posts.reshare(post._id), {
+        method: "POST",
+        body: JSON.stringify({
+          targetPlatforms: post.selectedPlatforms || [],
+          targetAccountIds: post.selectedAccountIds || [],
+          publishImmediately: true,
+        }),
+      });
       toast.success("Post shared again successfully!");
       await onReload();
     } catch (error) {
@@ -198,7 +205,7 @@ export default function PublishedPostsTable({
                       </td>
                       <td>
                         <div className="flex flex-wrap gap-1">
-                          {post.selectedPlatforms.map((plt) => (
+                          {post.selectedPlatforms?.map((plt) => (
                             <span
                               key={plt}
                               className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700"
@@ -227,13 +234,14 @@ export default function PublishedPostsTable({
                             type="button"
                             className="outline-btn text-xs px-2.5 py-1"
                             onClick={() => handleInspect(post._id)}
+                            disabled={loadingInspection}
                           >
                             View Details
                           </button>
                           <button
                             type="button"
                             className="outline-btn text-xs px-2.5 py-1"
-                            onClick={() => handleReshare(post._id)}
+                            onClick={() => handleReshare(post)}
                             disabled={resharingId === post._id}
                             title="Share this post again"
                           >

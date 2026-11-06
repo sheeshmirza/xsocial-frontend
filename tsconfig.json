@@ -49,7 +49,9 @@
   },
   // Exclude large or unnecessary directories from compilation
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "out",
+    ".next"
   ],
   // Files and directories to include in type checking
   "include": [

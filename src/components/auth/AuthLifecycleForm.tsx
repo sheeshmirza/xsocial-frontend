@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppIcon from "@/src/components/ui/AppIcon";
@@ -162,6 +163,11 @@ export default function AuthLifecycleForm({ mode }: Props) {
             {message.text}
           </p>
         )}
+
+        <p className="swap-cta">
+          Remember your password or ready to sign in?{" "}
+          <Link href="/signin">Sign In</Link>
+        </p>
       </section>
     </main>
   );

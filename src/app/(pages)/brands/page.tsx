@@ -10,7 +10,7 @@ import { useToast } from "@/src/components/ui/ToastContext";
 import ErrorBoundary from "@/src/components/ui/ErrorBoundary";
 import { api } from "@/src/config/api";
 import { authJsonFetch, logoutSession } from "@/src/lib/session";
-import type { Brand, BrandMember } from "@/src/lib/schemas";
+import type { Brand, BrandMember, BrandMemberRole } from "@/src/lib/schemas";
 
 export default function BrandsPage() {
   const toast = useToast();
@@ -34,7 +34,7 @@ export default function BrandsPage() {
 
   // Member invitation state
   const [memberEmail, setMemberEmail] = useState("");
-  const [memberRole, setMemberRole] = useState<"admin" | "member" | "client">("member");
+  const [memberRole, setMemberRole] = useState<BrandMemberRole>("editor");
   const [addingMember, setAddingMember] = useState(false);
 
   // Delete confirmation modals
@@ -44,6 +44,7 @@ export default function BrandsPage() {
   const [removingMember, setRemovingMember] = useState(false);
 
   const getBrandId = (b: Brand) => b.id || b._id || "";
+  const selectedBrandId = selectedBrand ? getBrandId(selectedBrand) : "";
 
   // TanStack Query: Brands
   const {
@@ -57,6 +58,22 @@ export default function BrandsPage() {
       const list = resp?.data || resp?.brands || [];
       return list.map((b) => ({ ...b, _id: getBrandId(b) }));
     },
+  });
+
+  // TanStack Query: Brand Members for selected workspace
+  const {
+    data: selectedBrandMembers = [],
+    isLoading: loadingMembers,
+  } = useQuery({
+    queryKey: ["brand-members", selectedBrandId],
+    queryFn: async () => {
+      if (!selectedBrandId) return [];
+      const resp = await authJsonFetch<{ data?: BrandMember[]; members?: BrandMember[] }>(
+        api.brands.members(selectedBrandId)
+      );
+      return resp?.data || resp?.members || [];
+    },
+    enabled: Boolean(selectedBrandId),
   });
 
   async function handleCreateBrand(e: React.FormEvent) {
@@ -134,6 +151,7 @@ export default function BrandsPage() {
       });
       toast.success(`Sent invitation to ${memberEmail.trim()}.`);
       setMemberEmail("");
+      await queryClient.invalidateQueries({ queryKey: ["brand-members", brandId] });
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Could not send invitation.");
@@ -144,13 +162,15 @@ export default function BrandsPage() {
 
   async function confirmRemoveMember() {
     if (!memberToRemove) return;
+    const { brandId, member } = memberToRemove;
     setRemovingMember(true);
     try {
-      await authJsonFetch(api.brands.removeMember(memberToRemove.brandId, memberToRemove.member.userId), {
+      await authJsonFetch(api.brands.removeMember(brandId, member.userId), {
         method: "DELETE",
       });
       toast.success("Team member removed.");
       setMemberToRemove(null);
+      await queryClient.invalidateQueries({ queryKey: ["brand-members", brandId] });
       await queryClient.invalidateQueries({ queryKey: ["brands"] });
     } catch (err: any) {
       toast.error(err.message || "Could not remove team member.");
@@ -289,7 +309,7 @@ export default function BrandsPage() {
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            Team: {brand.members?.length || 1} member(s)
+                            Team: {isSelected ? `${selectedBrandMembers.length} member(s)` : (brand.members?.length ? `${brand.members.length} member(s)` : "Workspace team")}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -344,12 +364,15 @@ export default function BrandsPage() {
                               <select
                                 id={memberRoleId}
                                 value={memberRole}
-                                onChange={(e) => setMemberRole(e.target.value as any)}
+                                onChange={(e) => setMemberRole(e.target.value as BrandMemberRole)}
                                 className="px-2 py-1.5 text-xs border rounded-lg bg-white"
                               >
+                                <option value="editor">Editor (Can create & edit posts)</option>
                                 <option value="admin">Admin (Full access)</option>
-                                <option value="member">Editor (Can create posts)</option>
-                                <option value="client">Reviewer (Can approve posts)</option>
+                                <option value="manager">Manager (Manage posts & campaigns)</option>
+                                <option value="approver">Approver (Can approve posts)</option>
+                                <option value="client">Client (Reviewer)</option>
+                                <option value="viewer">Viewer (Read-only)</option>
                               </select>
                             </div>
                             <button
@@ -361,32 +384,45 @@ export default function BrandsPage() {
                             </button>
                           </form>
 
-                          <div className="flex flex-col gap-1.5">
-                            {(brand.members || []).map((m, idx) => (
-                              <div
-                                key={m.userId || idx}
-                                className="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-lg border border-slate-200"
-                              >
-                                <span className="font-mono text-slate-700">
-                                  {m.email || m.userId}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <span className="uppercase text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
-                                    {m.role}
-                                  </span>
-                                  {m.role !== "owner" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setMemberToRemove({ brandId: bId, member: m })}
-                                      className="text-red-600 hover:underline ml-2"
-                                    >
-                                      Remove
-                                    </button>
-                                  )}
+                          {loadingMembers ? (
+                            <div className="text-xs text-slate-500 py-3 text-center">Loading team members...</div>
+                          ) : selectedBrandMembers.length === 0 ? (
+                            <div className="text-xs text-slate-500 py-3 text-center">
+                              No team members added yet. Invite someone above.
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1.5">
+                              {selectedBrandMembers.map((m, idx) => (
+                                <div
+                                  key={m.userId || idx}
+                                  className="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-lg border border-slate-200"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-slate-800">
+                                      {m.name || m.email || m.userId}
+                                    </span>
+                                    {m.name && m.email && (
+                                      <span className="font-mono text-[11px] text-slate-500">{m.email}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="uppercase text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200">
+                                      {m.role}
+                                    </span>
+                                    {m.role !== "owner" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setMemberToRemove({ brandId: bId, member: m })}
+                                        className="text-red-600 hover:underline ml-2"
+                                      >
+                                        Remove
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -157,10 +157,17 @@ export default function PublishedPostsPage() {
     );
   };
 
-  async function handleReshare(postId: string) {
-    setResharingId(postId);
+  async function handleReshare(post: PostItem) {
+    setResharingId(post._id);
     try {
-      await authJsonFetch(api.posts.reshare(postId), { method: "POST" });
+      await authJsonFetch(api.posts.reshare(post._id), {
+        method: "POST",
+        body: JSON.stringify({
+          targetPlatforms: post.selectedPlatforms || [],
+          targetAccountIds: post.selectedAccountIds || [],
+          publishImmediately: true,
+        }),
+      });
       toast.success("Post shared again successfully!");
       await queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch (error) {
@@ -448,7 +455,7 @@ export default function PublishedPostsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleReshare(post._id)}
+                        onClick={() => handleReshare(post)}
                         disabled={resharingId === post._id}
                         className="outline-btn text-xs px-2.5 py-1"
                         title="Share this post again"
@@ -539,7 +546,7 @@ export default function PublishedPostsPage() {
                             <button
                               type="button"
                               className="outline-btn text-xs px-2.5 py-1"
-                              onClick={() => handleReshare(post._id)}
+                              onClick={() => handleReshare(post)}
                               disabled={resharingId === post._id}
                             >
                               {resharingId === post._id ? "Sharing..." : "Share Again"}

@@ -84,7 +84,7 @@ export default function PostApprovalsModal({
                   </h4>
                   <p className="text-[11px] text-slate-500">
                     Created: {formatDate(post.createdAt)} • Channels:{" "}
-                    {post.selectedPlatforms.join(", ") || "All"}
+                    {post.selectedPlatforms?.join(", ") || "All"}
                   </p>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800">

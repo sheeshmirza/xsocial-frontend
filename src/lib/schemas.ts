@@ -81,7 +81,16 @@ export const SocialAccountsResponseSchema = z.object({
 });
 
 // Brand & Workspaces Schema
-export const BrandMemberRoleEnum = z.enum(["owner", "admin", "member", "client"]);
+export const BrandMemberRoleEnum = z.enum([
+  "owner",
+  "admin",
+  "manager",
+  "editor",
+  "approver",
+  "viewer",
+  "client",
+  "member",
+]);
 export type BrandMemberRole = z.infer<typeof BrandMemberRoleEnum>;
 
 export const BrandMemberSchema = z.object({
@@ -114,7 +123,7 @@ export type MediaType = z.infer<typeof MediaTypeEnum>;
 
 export const PostMediaItemSchema = z.object({
   type: MediaTypeEnum,
-  url: z.string().url("Invalid media URL"),
+  url: z.string().min(1, "Invalid media URL"),
   base64Data: z.string().optional(),
   mimeType: z.string().optional(),
   size: z.number().optional(),
@@ -146,7 +155,7 @@ export type PlatformResponse = z.infer<typeof PlatformResponseSchema>;
 export const PostItemSchema = z.object({
   _id: z.string(),
   id: z.string().optional(),
-  caption: z.string(),
+  caption: z.string().optional().default(""),
   title: z.string().optional(),
   postType: z.string().optional(),
   firstComment: z.string().optional(),
@@ -164,7 +173,7 @@ export const PostItemSchema = z.object({
   expiryUnit: RecurrenceUnitEnum.nullable().optional(),
   publishedExpiresAt: z.string().nullable().optional(),
   timezone: z.string().optional(),
-  selectedPlatforms: z.array(z.string()),
+  selectedPlatforms: z.array(z.string()).optional().default([]),
   selectedAccountIds: z.array(z.string()).optional(),
   createdAt: z.string(),
   publishedTime: z.string().nullable().optional(),

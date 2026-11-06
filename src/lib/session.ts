@@ -162,18 +162,37 @@ export const clearSession = () => {
   localStorage.removeItem(MAIN_DASHBOARD_URL_KEY);
 };
 
+export const handleSessionExpired = () => {
+  clearSession();
+  if (
+    isBrowser &&
+    !window.location.pathname.startsWith("/signin") &&
+    !window.location.pathname.startsWith("/signup") &&
+    !window.location.pathname.startsWith("/verify-email") &&
+    !window.location.pathname.startsWith("/forgot-password") &&
+    !window.location.pathname.startsWith("/reset-password")
+  ) {
+    const currentPath = window.location.pathname + window.location.search;
+    window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+  }
+};
+
 export const logoutSession = async () => {
   const refreshToken = getRefreshToken();
+  const accessToken = getAccessToken();
   try {
     if (refreshToken) {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
       await fetchWithTimeout(
         api.auth.logout(),
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getAccessToken()}`,
-          },
+          headers,
           body: JSON.stringify({ refreshToken }),
         },
         5000,
@@ -268,7 +287,11 @@ export const isJwtExpired = (token: string, bufferSeconds = 30): boolean => {
     const parts = token.split(".");
     if (parts.length < 2) return true;
     const base64Url = parts[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base64.length % 4;
+    if (pad) {
+      base64 += "=".repeat(4 - pad);
+    }
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split("")
@@ -297,60 +320,6 @@ export const ensureAccessToken = async (): Promise<string> => {
   return refreshSession();
 };
 
-export const authFetch = async (
-  input: RequestInfo | URL,
-  init: RequestInit = {},
-  allowRetry = true,
-): Promise<Response> => {
-  const token = await ensureAccessToken();
-  if (!token) {
-    clearSession();
-    throw new Error("Session expired. Please sign in again.");
-  }
-
-  const headers = normalizeHeaders(init.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-
-  if (!headers.has("Content-Type") && shouldSetJsonContentType(init.body)) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  const response = await fetchWithRetry(input, {
-    ...init,
-    headers,
-  });
-
-  if (response.status === 401 && allowRetry) {
-    const refreshed = await refreshSession();
-    if (!refreshed) {
-      clearSession();
-      throw new Error("Session expired. Please sign in again.");
-    }
-
-    const retryHeaders = normalizeHeaders(init.headers);
-    retryHeaders.set("Authorization", `Bearer ${refreshed}`);
-    if (!retryHeaders.has("Content-Type") && shouldSetJsonContentType(init.body)) {
-      retryHeaders.set("Content-Type", "application/json");
-    }
-
-    const retryResponse = await fetchWithRetry(input, {
-      ...init,
-      headers: retryHeaders,
-    });
-
-    if (retryResponse.status === 401) {
-      clearSession();
-    }
-    return retryResponse;
-  }
-
-  if (response.status === 401) {
-    clearSession();
-  }
-
-  return response;
-};
-
 export class ApiHttpError extends Error {
   public status: number;
   public details?: any;
@@ -372,6 +341,60 @@ export const getFriendlyHttpErrorMessage = (status: number): string => {
   return "Something went wrong. Please try again.";
 };
 
+export const authFetch = async (
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  allowRetry = true,
+): Promise<Response> => {
+  const token = await ensureAccessToken();
+  if (!token) {
+    handleSessionExpired();
+    throw new ApiHttpError(401, "Session expired. Please sign in again.");
+  }
+
+  const headers = normalizeHeaders(init.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+
+  if (!headers.has("Content-Type") && shouldSetJsonContentType(init.body)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetchWithRetry(input, {
+    ...init,
+    headers,
+  });
+
+  if (response.status === 401 && allowRetry) {
+    const refreshed = await refreshSession();
+    if (!refreshed) {
+      handleSessionExpired();
+      throw new ApiHttpError(401, "Session expired. Please sign in again.");
+    }
+
+    const retryHeaders = normalizeHeaders(init.headers);
+    retryHeaders.set("Authorization", `Bearer ${refreshed}`);
+    if (!retryHeaders.has("Content-Type") && shouldSetJsonContentType(init.body)) {
+      retryHeaders.set("Content-Type", "application/json");
+    }
+
+    const retryResponse = await fetchWithRetry(input, {
+      ...init,
+      headers: retryHeaders,
+    });
+
+    if (retryResponse.status === 401) {
+      handleSessionExpired();
+    }
+    return retryResponse;
+  }
+
+  if (response.status === 401) {
+    handleSessionExpired();
+  }
+
+  return response;
+};
+
 export const authJsonFetch = async <T = any>(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -387,17 +410,7 @@ export const authJsonFetch = async <T = any>(
       getFriendlyHttpErrorMessage(response.status);
 
     if (response.status === 401) {
-      clearSession();
-      if (
-        isBrowser &&
-        !window.location.pathname.startsWith("/signin") &&
-        !window.location.pathname.startsWith("/signup") &&
-        !window.location.pathname.startsWith("/verify-email") &&
-        !window.location.pathname.startsWith("/forgot-password") &&
-        !window.location.pathname.startsWith("/reset-password")
-      ) {
-        window.location.href = `/signin?redirect=${encodeURIComponent(window.location.pathname)}`;
-      }
+      handleSessionExpired();
     }
 
     throw new ApiHttpError(response.status, message, payload);
@@ -425,7 +438,15 @@ export const jsonFetch = async <T = any>(
   init: RequestInit = {},
   schema?: z.ZodType<T>,
 ): Promise<T> => {
-  const response = await fetchWithRetry(input, init);
+  const headers = normalizeHeaders(init.headers);
+  if (!headers.has("Content-Type") && shouldSetJsonContentType(init.body)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetchWithRetry(input, {
+    ...init,
+    headers,
+  });
   const payload = await parseJsonSafely(response);
 
   if (!response.ok) {

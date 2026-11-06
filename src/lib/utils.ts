@@ -5,6 +5,13 @@ import type { SocialAccount } from "./schemas";
  * Normalizes an API social account payload into a standardized SocialAccount entity.
  */
 export const normalizeSocialAccount = (account: any): SocialAccount => {
+  if (!account) {
+    return {
+      _id: "",
+      id: "",
+      platform: "instagram",
+    };
+  }
   const resolvedId = account._id || account.id || "";
   return {
     ...account,

@@ -26,6 +26,8 @@ export default function PagesError({
     type = "500";
   } else if (error.message.toLowerCase().includes("timed out")) {
     type = "timeout";
+  } else if (error.message.toLowerCase().includes("offline") || error.message.toLowerCase().includes("network")) {
+    type = "network";
   }
 
   return <ErrorFallback type={type} message={error.message} onRetry={reset} />;

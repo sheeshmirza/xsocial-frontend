@@ -129,11 +129,11 @@ export default function PostComposer({
 
     if (!files.length || uploadingMedia) return;
 
-    // Client-side file size bounds check (max 50MB per file)
-    const MAX_FILE_SIZE = 50 * 1024 * 1024;
+    // Client-side file size bounds check (max 32MB per file to match backend limit)
+    const MAX_FILE_SIZE = 32 * 1024 * 1024;
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`"${file.name}" exceeds the 50MB upload limit.`);
+        toast.error(`"${file.name}" exceeds the 32MB upload limit.`);
         return;
       }
     }
@@ -225,6 +225,11 @@ export default function PostComposer({
       return false;
     }
 
+    if (enableRecurrence && !enableSchedule) {
+      toast.error("Repeating posts must be scheduled with a date and time.");
+      return false;
+    }
+
     if (enableSchedule) {
       if (!scheduleDate || !scheduleTime) {
         toast.error("Select both date and time for scheduled delivery.");
@@ -235,6 +240,11 @@ export default function PostComposer({
         toast.error("Scheduled delivery time must be in the future.");
         return false;
       }
+    }
+
+    if (enableAutoExpire && (!temporaryPostInterval.trim() || Number(temporaryPostInterval) <= 0)) {
+      toast.error("Please enter a valid expiration interval.");
+      return false;
     }
 
     return true;
@@ -266,7 +276,17 @@ export default function PostComposer({
               ? "image"
               : "text";
 
-      const recurrenceValue: Recurrence = enableRecurrence ? "daily" : "once";
+      const recurrenceValue: Recurrence = enableRecurrence
+        ? recurrenceUnit === "hour" || recurrenceUnit === "minute"
+          ? "hourly"
+          : recurrenceUnit === "day"
+            ? "daily"
+            : recurrenceUnit === "week"
+              ? "weekly"
+              : recurrenceUnit === "month"
+                ? "monthly"
+                : "daily"
+        : "once";
 
       const payload: any = {
         title: title.trim(),
@@ -298,6 +318,11 @@ export default function PostComposer({
         };
       }
 
+      if (enableAutoExpire && temporaryPostInterval.trim()) {
+        payload.expiryInterval = Number(temporaryPostInterval);
+        payload.expiryUnit = temporaryPostUnit;
+      }
+
       if (enableAiGeneration) {
         payload.ai = {
           enabled: true,
@@ -310,34 +335,42 @@ export default function PostComposer({
         };
       }
 
-      const created = await authJsonFetch<any>(api.posts.create(), {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      const createdPostId = created?.id || created?._id || created?.data?.id || created?.data?._id;
-      if (!createdPostId) {
-        throw new Error("Could not retrieve created post identifier.");
-      }
-
       if (isApprovalRequest) {
-        // Complete Backend Mapping: Call submitApproval
+        payload.status = "draft";
+        const created = await authJsonFetch<any>(api.posts.create(), {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        const createdPostId = created?.id || created?._id || created?.data?.id || created?.data?._id;
+        if (!createdPostId) {
+          throw new Error("Could not retrieve created post identifier.");
+        }
         await authJsonFetch(api.posts.submitApproval(createdPostId), { method: "POST" });
         toast.success("Post sent for review and approval!");
       } else if (enableSchedule) {
-        await authJsonFetch(api.posts.schedule(createdPostId), {
+        payload.status = "scheduled";
+        payload.scheduledTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+        payload.timezone = localTimezone;
+        if (enableRecurrence) {
+          payload.recurrence = recurrenceValue;
+          payload.recurrenceInterval = Number(recurrenceInterval);
+          payload.recurrenceUnit = recurrenceUnit;
+        }
+        await authJsonFetch<any>(api.posts.create(), {
           method: "POST",
-          body: JSON.stringify({
-            date: scheduleDate,
-            time: scheduleTime,
-            timezone: localTimezone,
-            recurrence: recurrenceValue,
-            recurrenceInterval: enableRecurrence ? Number(recurrenceInterval) : undefined,
-            recurrenceUnit: enableRecurrence ? recurrenceUnit : undefined,
-          }),
+          body: JSON.stringify(payload),
         });
         toast.success("Post scheduled successfully!");
       } else {
+        payload.status = "draft";
+        const created = await authJsonFetch<any>(api.posts.create(), {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        const createdPostId = created?.id || created?._id || created?.data?.id || created?.data?._id;
+        if (!createdPostId) {
+          throw new Error("Could not retrieve created post identifier.");
+        }
         await authJsonFetch(api.posts.publish(createdPostId), {
           method: "POST",
           body: JSON.stringify({
@@ -479,6 +512,31 @@ export default function PostComposer({
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {(selectedPostType === "reel" || selectedPostType === "video") && instagramSelected && (
+          <div className="border border-purple-200 bg-purple-50/40 rounded-xl p-3.5 flex flex-col gap-2 my-2">
+            <label className="composer-toggle text-xs font-semibold text-purple-900">
+              <input
+                type="checkbox"
+                checked={instagramTrialEnabled}
+                onChange={(e) => setInstagramTrialEnabled(e.target.checked)}
+              />
+              Enable Instagram Trial Reel (test with non-followers first)
+            </label>
+            {instagramTrialEnabled && (
+              <label className="composer-label text-xs mt-1">
+                Graduation Strategy
+                <select
+                  value={instagramGraduation}
+                  onChange={(e) => setInstagramGraduation(e.target.value)}
+                >
+                  <option value="MANUAL">Manual Graduation</option>
+                  <option value="AUTO">Auto Graduation (based on performance)</option>
+                </select>
+              </label>
+            )}
           </div>
         )}
 
@@ -642,12 +700,56 @@ export default function PostComposer({
               <input
                 type="checkbox"
                 checked={enableRecurrence}
-                onChange={(e) => setEnableRecurrence(e.target.checked)}
+                onChange={(e) => {
+                  const nextVal = e.target.checked;
+                  setEnableRecurrence(nextVal);
+                  if (nextVal && !enableSchedule) {
+                    setEnableSchedule(true);
+                  }
+                }}
                 disabled={!accounts.length}
               />
               Repeat Automatically
             </label>
+            <label className="composer-toggle">
+              <input
+                type="checkbox"
+                checked={enableAutoExpire}
+                onChange={(e) => setEnableAutoExpire(e.target.checked)}
+                disabled={!accounts.length}
+              />
+              Auto-Expire Post
+            </label>
           </div>
+
+          {enableAutoExpire && (
+            <div className="schedule-grid mt-3">
+              <label className="composer-label text-xs">
+                Expire After
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={temporaryPostInterval}
+                  onChange={(e) => setTemporaryPostInterval(e.target.value)}
+                  placeholder="e.g. 24"
+                />
+              </label>
+              <label className="composer-label text-xs">
+                Unit
+                <select
+                  value={temporaryPostUnit}
+                  onChange={(e) => setTemporaryPostUnit(e.target.value as RecurrenceUnit)}
+                >
+                  <option value="minute">Minutes</option>
+                  <option value="hour">Hours</option>
+                  <option value="day">Days</option>
+                  <option value="week">Weeks</option>
+                  <option value="month">Months</option>
+                </select>
+              </label>
+            </div>
+          )}
 
           {enableSchedule && (
             <div className="schedule-grid mt-3">

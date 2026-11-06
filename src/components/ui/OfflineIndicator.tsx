@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppIcon from "@/src/components/ui/AppIcon";
 
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
   const [showReconnected, setShowReconnected] = useState(false);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -15,19 +16,21 @@ export default function OfflineIndicator() {
     const handleOnline = () => {
       setIsOnline(true);
       setShowReconnected(true);
-      const timer = setTimeout(() => setShowReconnected(false), 3000);
-      return () => clearTimeout(timer);
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = setTimeout(() => setShowReconnected(false), 3000);
     };
 
     const handleOffline = () => {
       setIsOnline(false);
       setShowReconnected(false);
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
     return () => {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };

@@ -35,7 +35,7 @@ body,
 
 body {
   color: var(--text);
-  font-family: "Sora", "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: var(--font-sora), var(--font-manrope), "Avenir Next", "Segoe UI", sans-serif;
   background:
     radial-gradient(700px 260px at 100% 0%, rgba(187, 107, 61, 0.06), transparent 70%),
     radial-gradient(760px 280px at 0% 100%, rgba(31, 109, 130, 0.08), transparent 72%),

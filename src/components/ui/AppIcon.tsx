@@ -46,6 +46,17 @@ export default function AppIcon({ name, className }: Props) {
     strokeLinejoin: "round" as const,
   };
 
+  if (name === "spark") {
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        <path
+          d="M12 3c0 4.5-3.5 8-8 8 4.5 0 8 3.5 8 8 0-4.5 3.5-8 8-8-4.5 0-8-3.5-8-8Z"
+          {...common}
+        />
+      </svg>
+    );
+  }
+
   if (name === "calendar") {
     return (
       <svg viewBox="0 0 24 24" className={className} aria-hidden="true">

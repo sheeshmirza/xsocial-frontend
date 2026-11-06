@@ -20,7 +20,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["Sora", "Manrope", "system-ui", "sans-serif"],
+        sans: ["var(--font-sora)", "var(--font-manrope)", "system-ui", "sans-serif"],
       },
       keyframes: {
         "fade-in": {

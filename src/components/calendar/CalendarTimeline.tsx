@@ -91,9 +91,10 @@ export default function CalendarTimeline({
   };
 
   const handleJumpToToday = () => {
-    setCurrentYear(today.getFullYear());
-    setCurrentMonth(today.getMonth());
-    setSelectedDayNumber(today.getDate());
+    const now = new Date();
+    setCurrentYear(now.getFullYear());
+    setCurrentMonth(now.getMonth());
+    setSelectedDayNumber(now.getDate());
   };
 
   // Filter posts by platform and search query
@@ -248,20 +249,18 @@ export default function CalendarTimeline({
 
     setSavingEdit(true);
     try {
+      const scheduledIso = new Date(`${editDate}T${editTime}`).toISOString();
       await authJsonFetch(api.posts.update(editingPost._id), {
         method: "PUT",
         body: JSON.stringify({
           title: editTitle.trim(),
           caption: editCaption.trim(),
-        }),
-      });
-
-      await authJsonFetch(api.posts.schedule(editingPost._id), {
-        method: "POST",
-        body: JSON.stringify({
-          date: editDate,
-          time: editTime,
+          status: "scheduled",
+          scheduledTime: scheduledIso,
           timezone: editTimezone || localTimezone,
+          recurrence: editingPost.recurrence || "once",
+          recurrenceInterval: editingPost.recurrenceInterval,
+          recurrenceUnit: editingPost.recurrenceUnit,
         }),
       });
 
@@ -279,10 +278,16 @@ export default function CalendarTimeline({
     setTogglingRecurrenceId(post._id);
     try {
       if (post.recurrencePaused) {
-        await authJsonFetch(api.posts.resumeRecurrence(post._id), { method: "POST" });
+        await authJsonFetch(api.posts.bulkResumeRecurrence(), {
+          method: "POST",
+          body: JSON.stringify({ ids: [post._id] }),
+        });
         toast.success("Repeating schedule resumed.");
       } else {
-        await authJsonFetch(api.posts.pauseRecurrence(post._id), { method: "POST" });
+        await authJsonFetch(api.posts.bulkPauseRecurrence(), {
+          method: "POST",
+          body: JSON.stringify({ ids: [post._id] }),
+        });
         toast.success("Repeating schedule paused.");
       }
       await onReload();

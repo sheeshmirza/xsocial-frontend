@@ -93,20 +93,18 @@ export default function ScheduledPostsTable({
 
     setSavingEdit(true);
     try {
+      const scheduledIso = new Date(`${editDate}T${editTime}`).toISOString();
       await authJsonFetch(api.posts.update(editingPost._id), {
         method: "PUT",
         body: JSON.stringify({
           title: editTitle.trim(),
           caption: editCaption.trim(),
-        }),
-      });
-
-      await authJsonFetch(api.posts.schedule(editingPost._id), {
-        method: "POST",
-        body: JSON.stringify({
-          date: editDate,
-          time: editTime,
+          status: "scheduled",
+          scheduledTime: scheduledIso,
           timezone: editTimezone || localTimezone,
+          recurrence: editingPost.recurrence || "once",
+          recurrenceInterval: editingPost.recurrenceInterval,
+          recurrenceUnit: editingPost.recurrenceUnit,
         }),
       });
 
@@ -124,10 +122,16 @@ export default function ScheduledPostsTable({
     setTogglingRecurrenceId(post._id);
     try {
       if (post.recurrencePaused) {
-        await authJsonFetch(api.posts.resumeRecurrence(post._id), { method: "POST" });
+        await authJsonFetch(api.posts.bulkResumeRecurrence(), {
+          method: "POST",
+          body: JSON.stringify({ ids: [post._id] }),
+        });
         toast.success("Repeating schedule resumed.");
       } else {
-        await authJsonFetch(api.posts.pauseRecurrence(post._id), { method: "POST" });
+        await authJsonFetch(api.posts.bulkPauseRecurrence(), {
+          method: "POST",
+          body: JSON.stringify({ ids: [post._id] }),
+        });
         toast.success("Repeating schedule paused.");
       }
       await onReload();
@@ -328,7 +332,7 @@ export default function ScheduledPostsTable({
                       </td>
                       <td>
                         <p className="post-platforms">
-                          {post.selectedPlatforms.join(", ") || "All channels"}
+                          {post.selectedPlatforms?.join(", ") || "All channels"}
                         </p>
                       </td>
                       <td>

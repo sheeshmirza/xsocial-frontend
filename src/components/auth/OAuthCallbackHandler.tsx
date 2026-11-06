@@ -9,6 +9,7 @@ import {
   SUPPORTED_SOCIAL_PLATFORMS,
 } from "@/src/config/api";
 import AppIcon from "@/src/components/ui/AppIcon";
+import { getAccessToken } from "@/src/lib/session";
 
 type Status = "loading" | "success" | "error";
 
@@ -42,17 +43,17 @@ export default function OAuthCallbackHandler({
     `Connecting your ${label} account...`,
   );
   const executedRef = useRef(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (executedRef.current) return;
     executedRef.current = true;
 
-    let redirectTimer: ReturnType<typeof setTimeout> | null = null;
-
     const redirect = (nextStatus: Status, nextMessage: string) => {
       setStatus(nextStatus);
       setMessage(nextMessage);
-      redirectTimer = setTimeout(() => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = setTimeout(() => {
         const socialTag = dashboardSocial || provider;
         router.replace(
           `/accounts?connected=${socialTag}&status=${nextStatus}&message=${encodeURIComponent(nextMessage)}`,
@@ -79,8 +80,8 @@ export default function OAuthCallbackHandler({
       if (error) {
         return redirect("error", errorDescription || error);
       }
-      if (!code) {
-        return redirect("error", "Sign-in information was missing. Please try connecting again.");
+      if (!code || !state) {
+        return redirect("error", "Sign-in information was missing or expired. Please try connecting again.");
       }
 
       const callbackKey = `oauth-callback:${provider}:${code}:${state || ""}`;
@@ -101,15 +102,19 @@ export default function OAuthCallbackHandler({
           : new URL(callbackEndpoint, window.location.origin);
 
         callbackUrl.searchParams.set("code", code);
+        callbackUrl.searchParams.set("state", state);
         callbackUrl.searchParams.set("format", "json");
-        if (state) {
-          callbackUrl.searchParams.set("state", state);
+
+        const headers: Record<string, string> = {
+          Accept: "application/json",
+        };
+        const token = getAccessToken();
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
         }
 
         const response = await fetch(callbackUrl.toString(), {
-          headers: {
-            Accept: "application/json",
-          },
+          headers,
         });
         const data = await response.json().catch(() => null);
 
@@ -138,8 +143,8 @@ export default function OAuthCallbackHandler({
     handleCallback();
 
     return () => {
-      if (redirectTimer) {
-        clearTimeout(redirectTimer);
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
       }
     };
   }, [dashboardSocial, label, provider, router]);

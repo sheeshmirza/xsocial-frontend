@@ -30,13 +30,22 @@ export default function AuthForm({ mode }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const getSafeRedirectTarget = () => {
+    if (typeof window === "undefined") return "/dashboard";
+    const rawTarget = new URLSearchParams(window.location.search).get("redirect");
+    if (rawTarget && rawTarget.startsWith("/") && !rawTarget.startsWith("//")) {
+      return rawTarget;
+    }
+    return "/dashboard";
+  };
+
   useEffect(() => {
     if (mode !== "signin") return;
 
     let isMounted = true;
     ensureAccessToken().then((token) => {
       if (isMounted && token) {
-        router.replace("/dashboard");
+        router.replace(getSafeRedirectTarget());
       }
     });
 
@@ -96,6 +105,10 @@ export default function AuthForm({ mode }: Props) {
           data?.tokens?.refreshToken ||
           data?.refreshToken;
 
+        if (!accessToken) {
+          throw new Error("Sign-in succeeded but no access token was returned.");
+        }
+
         setSessionTokens({
           accessToken,
           refreshToken,
@@ -105,14 +118,16 @@ export default function AuthForm({ mode }: Props) {
           setMainDashboardUrl(mainDashboardUrl);
         }
 
+        const target = getSafeRedirectTarget();
         setSuccess("Welcome back! Taking you to your dashboard...");
-        router.replace("/dashboard");
+        router.replace(target);
         return;
       }
 
-      if (data?.verificationToken) {
+      const verificationToken = data?.verificationToken || data?.data?.verificationToken;
+      if (verificationToken) {
         setSuccess("Account created! Taking you to confirm your email...");
-        router.push(`/verify-email?token=${encodeURIComponent(data.verificationToken)}`);
+        router.push(`/verify-email?token=${encodeURIComponent(verificationToken)}`);
         return;
       }
 
